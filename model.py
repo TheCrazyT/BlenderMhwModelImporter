@@ -244,6 +244,37 @@ class MODVertexBufferd829702c:
             ReadLong(headerref.fl)
             ReadHalfFloat(headerref.fl)
             ReadHalfFloat(headerref.fl)
+class MODVertexBufferb8e69244:
+    def __init__(self,headerref,vertexcount):
+        print("MODVertexBufferd829702c %d" % vertexcount)
+        self.vertarray   = []
+        self.headerref   = headerref
+        self.vertexcount = vertexcount
+        for i in range(0,vertexcount):
+            if headerref.bendian:
+                self.vertarray.append([ReadBEFloat(headerref.fl),ReadBEFloat(headerref.fl),ReadBEFloat(headerref.fl)])
+            else:
+                self.vertarray.append([ReadFloat(headerref.fl),ReadFloat(headerref.fl),ReadFloat(headerref.fl)])
+            Read8s(headerref.fl)
+            Read8s(headerref.fl)
+            Read8s(headerref.fl)
+            ReadByte(headerref.fl)
+            ReadLong(headerref.fl)
+            ReadHalfFloat(headerref.fl)
+            ReadHalfFloat(headerref.fl)
+            ReadLong(headerref.fl)
+            ReadByte(headerref.fl)
+            ReadByte(headerref.fl)
+            ReadByte(headerref.fl)
+            ReadByte(headerref.fl)
+            for b in range(1,9):
+                ReadByte(headerref.fl)
+            ReadLong(headerref.fl)
+            
+            ReadByte(headerref.fl)
+            ReadByte(headerref.fl)
+            ReadByte(headerref.fl)
+            ReadByte(headerref.fl)
 MODVertexBuffera5104ca0 = MODVertexBuffer5e7f202d
 MODVertexBufferf637401c = MODVertexBufferf06033f
 MODVertexBuffera756f2f9 = MODVertexBufferd829702c
