@@ -1,1 +1,1 @@
-Compiled commit bfac524414e86b497df4b81b5521cc4436983d7a, downloaded from https://github.com/xdanieldzd/Scarlet/
+Compiled commit f02b1ffda6e39f6e9ac6969b4bdce23e3e759581, downloaded from https://github.com/TheCrazyT/Scarlet/
