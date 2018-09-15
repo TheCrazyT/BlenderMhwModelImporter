@@ -685,7 +685,7 @@ def register():
  
  
 def unregister():
-    bpy.utils.unregister_class(ImportMH3U)
+    bpy.utils.unregister_class(ImportMOD3)
     bpy.types.INFO_MT_file_import.remove(menu_func_import)
  
  
