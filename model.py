@@ -18,10 +18,10 @@ from mathutils import Vector, Matrix, Euler
 from struct import unpack
 x64=64
 
+
 class MODVertexBuffer818904dc:
     def __init__(self,headerref,vertexcount):
         print("MODVertexBuffer818904dc %d" % vertexcount)
-        raise Exception("ToDo")
         self.vertarray   = []
         self.headerref   = headerref
         self.vertexcount = vertexcount
@@ -443,6 +443,12 @@ class ImportMOD3(Operator, ImportHelper):
     filename_ext = ".mod3"
  
     filter_glob = StringProperty(default="*.mod3", options={'HIDDEN'}, maxlen=255)
+    
+    use_layers = BoolProperty(
+            name="Use layers for mesh parts",
+            description="If we find multiple mesh parts, try to move every mesh in a seperate layer.",
+            default=True,
+)
 
     def readHeader(self):
         fl = self.fl
@@ -639,6 +645,8 @@ class ImportMOD3(Operator, ImportHelper):
     
     def execute(self, context):
         global content
+        if(self.use_layers):
+            print("using layers")
         with open(self.filepath, 'rb') as content_file:
             fl = 0
             content = content_file.read()
@@ -653,11 +661,12 @@ class ImportMOD3(Operator, ImportHelper):
         self.readVertexes()
         
         fi = 0
+        pi = 0
         for m in self.parts:
             if m.meshdata != None:
                 bm = bmesh.new()
                 mesh = bpy.data.meshes.new("mesh")  # add a new mesh
-                obj = bpy.data.objects.new("MyObject", mesh)  # add a new object using the mesh
+                obj = bpy.data.objects.new("MyObject.%d.%08x" % (pi,m.BlockType), mesh)  # add a new object using the mesh
                 #print("%d     %d" % (m.VertexCount,len(m.meshdata.vertarray)))
                 verts  = []
                 verts2 = []
@@ -691,6 +700,9 @@ class ImportMOD3(Operator, ImportHelper):
 
                 scene = bpy.context.scene
                 scene.objects.link(obj)  # put the object into the scene (link)
+                if(self.use_layers):
+                    for i in range(20):
+                        obj.layers[i] = (i == (pi % 20)) # we only have 20 layers available ... sadly
                 scene.objects.active = obj  # set as the active object in the scene
                 obj.select = True  # select object
 
@@ -701,6 +713,7 @@ class ImportMOD3(Operator, ImportHelper):
                 bm.to_mesh(mesh)  
                 bm.free()  # always do this when finished
 
+            pi += 1
             #break
 
 
