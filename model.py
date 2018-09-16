@@ -169,7 +169,6 @@ class MODVertexBufferb2fc0083:
 class MODVertexBuffer366995a7:
     def __init__(self,headerref,vertexcount):
         print("MODVertexBuffer366995a7 %d" % vertexcount)
-        raise Exception("ToDo")
         self.vertarray   = []
         self.headerref   = headerref
         self.vertexcount = vertexcount
@@ -186,6 +185,14 @@ class MODVertexBuffer366995a7:
             ReadHalfFloat(headerref.fl)
             ReadHalfFloat(headerref.fl)
             ReadLong(headerref.fl)
+            Read8s(headerref.fl)
+            Read8s(headerref.fl)
+            Read8s(headerref.fl)
+            Read8s(headerref.fl)
+            for b in range(0,8):
+                Read8s(headerref.fl)
+            ReadLong(headerref.fl)
+
 class MODVertexBufferc9690ab8:
     def __init__(self,headerref,vertexcount):
         print("MODVertexBufferc9690ab8 %d" % vertexcount)
@@ -445,10 +452,15 @@ class ImportMOD3(Operator, ImportHelper):
     filter_glob = StringProperty(default="*.mod3", options={'HIDDEN'}, maxlen=255)
     
     use_layers = BoolProperty(
-            name="Use layers for mesh parts",
+            name="Use layers for mesh parts.",
             description="If we find multiple mesh parts, try to move every mesh in a seperate layer.",
             default=True,
-)
+    )
+    only_import_lod_1 = BoolProperty(
+            name="Only import high LOD-parts.",
+            description="Skip meshparts with low level of detail.",
+            default=True,
+    )
 
     def readHeader(self):
         fl = self.fl
@@ -663,10 +675,12 @@ class ImportMOD3(Operator, ImportHelper):
         fi = 0
         pi = 0
         for m in self.parts:
+            if (self.only_import_lod_1) and (m.LOD!=1):
+                continue
             if m.meshdata != None:
                 bm = bmesh.new()
                 mesh = bpy.data.meshes.new("mesh")  # add a new mesh
-                obj = bpy.data.objects.new("MyObject.%d.%08x" % (pi,m.BlockType), mesh)  # add a new object using the mesh
+                obj = bpy.data.objects.new("MyObject.%05d.%08x" % (pi,m.BlockType), mesh)  # add a new object using the mesh
                 #print("%d     %d" % (m.VertexCount,len(m.meshdata.vertarray)))
                 verts  = []
                 verts2 = []
@@ -701,8 +715,8 @@ class ImportMOD3(Operator, ImportHelper):
                 scene = bpy.context.scene
                 scene.objects.link(obj)  # put the object into the scene (link)
                 if(self.use_layers):
-                    for i in range(20):
-                        obj.layers[i] = (i == (pi % 20)) # we only have 20 layers available ... sadly
+                    for i in range(19):
+                        obj.layers[1+i] = (i == (pi % 19)) # we only have 20 layers available ... sadly
                 scene.objects.active = obj  # set as the active object in the scene
                 obj.select = True  # select object
 
