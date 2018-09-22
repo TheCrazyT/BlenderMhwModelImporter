@@ -20,4 +20,4 @@ install:
 - cd .. && pwd && ls
 script:
 - mkdir build
-- tar -czf build/MHWImporter.tar.gz model.py texture.py Scarlet
+- tar -czf build/MHWImporter.tar.gz mhw_model.py mhw_texture.py Scarlet

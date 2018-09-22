@@ -9,15 +9,51 @@ bl_info = {
     "location": "File > Import"
 }
  
+ 
+
+ 
 import bpy
 import bmesh
+import os
+import configparser
 from bpy_extras.io_utils import ImportHelper
 from bpy.props import StringProperty, BoolProperty, EnumProperty
 from bpy.types import Operator
 from mathutils import Vector, Matrix, Euler
-from struct import unpack
+from struct import unpack, pack
 x64=64
 
+def writeConfig():
+    global config_path,config
+    f = open(config_filepath,"w+")
+    f.write("[DEFAULT]\n")
+    for x in config['DEFAULT']:
+        f.write("%s=%s\n" % (x,config['DEFAULT'][x]))
+    f.close()
+    print("write config:")
+    print({section: dict(config[section]) for section in config.sections()})
+
+def init_config():
+    global config_filepath,config,PATH,CHUNK_PATH
+    config_path = bpy.utils.user_resource('CONFIG', path='scripts', create=True)
+    config_filepath = os.path.join(config_path, "mhw_importer.config")
+    print("config_filepath: %s" % config_filepath)
+    config = configparser.ConfigParser()
+    if not os.path.isfile(config_filepath):
+        config['DEFAULT']    = "d:\\tmp\\test"
+        config['CHUNK_PATH'] = "d:\\tmp\\chunk"
+        writeConfig()
+    config.read(config_filepath)
+    if 'INSTALL_PATH' in config['DEFAULT']:
+        PATH = config['DEFAULT']['INSTALL_PATH']
+    else:
+        PATH = "d:\\tmp\\test"
+    if 'CHUNK_PATH' in config['DEFAULT']:
+        CHUNK_PATH = config['DEFAULT']['CHUNK_PATH']
+    else:
+        CHUNK_PATH = "d:\\tmp\\chunk"
+    
+init_config()
 
 class MODVertexBuffer818904dc:
     def __init__(self,headerref,vertexcount):
@@ -451,10 +487,26 @@ class ImportMOD3(Operator, ImportHelper):
  
     filter_glob = StringProperty(default="*.mod3", options={'HIDDEN'}, maxlen=255)
     
+    
+    chunk_path = StringProperty(
+        name="Chunk path",
+        description="Path to chunk folder (containing template.mrl3 for example)",
+        default=CHUNK_PATH,
+    )
+    install_path = StringProperty(
+            name="Install path.",
+            description="Path the contains the Scarlet directory.",
+            default=PATH,
+    )
     use_layers = BoolProperty(
             name="Use layers for mesh parts.",
             description="If we find multiple mesh parts, try to move every mesh in a seperate layer.",
             default=True,
+    )
+    import_textures = BoolProperty(
+            name="Import textures.",
+            description="Looks automatically for the *.mrl3 file and imports the *.tex files.",
+            default=False,
     )
     only_import_lod_1 = BoolProperty(
             name="Only import high LOD-parts.",
@@ -654,9 +706,62 @@ class ImportMOD3(Operator, ImportHelper):
         Seek(self.fl,self.VertexOffset)
         for m in self.parts:
             m.loadmeshdata()
+
+    def parseMrl3(self,filepath):
+        global PATH,CHUNK_PATH,content
+        
+        import mhw_texture
+        mhw_texture.PATH = PATH
+        mhw_texture.CHUNK_PATH = CHUNK_PATH
+        
+        if not os.path.isfile(filepath):
+            print("%s not found" % filepath)
+            return
+        
+        if not os.path.isdir(CHUNK_PATH):
+            raise Exception("Chunkdirectory %s does not exist!" % CHUNK_PATH)
+        
+        with open(filepath, 'rb') as content_file:
+            content = content_file.read()
+
+        fl      = 1
+        pos[fl] = 0
+        ReadLong(fl)
+        for u in range(0,12):
+            ReadByte(fl)
+        marerialCount = ReadLong(fl)
+        textureCount = ReadLong(fl)
+        for i in range(0,4):
+            ReadLong(fl)
+        
+        for i in range(0,textureCount):
+            ReadLong(fl)
+            for i in range(0,12):
+                ReadByte(fl)
+            tex = ""
+            for i in range(0,256):
+                b = ReadByte(fl)
+                if b != 0:
+                    by = chr(b)
+                    tex = "%s%s"  % (tex,by)
+            texpath = "%s\\%s.tex" % (CHUNK_PATH,tex)
+            print("importing texture: %s" % (texpath))
+            mhw_texture.doImportTex(texpath)
     
     def execute(self, context):
-        global content
+        global content,CHUNK_PATH
+        CHUNK_PATH = self.chunk_path
+        if CHUNK_PATH[len(CHUNK_PATH)-1] == '\\':
+            CHUNK_PATH = CHUNK_PATH[0:len(CHUNK_PATH)-1]
+        PATH = self.install_path
+        if not os.path.isdir(PATH):
+            raise Exception("Install path %s not found!" % PATH)
+            
+        config['DEFAULT']['INSTALL_PATH'] = PATH
+        config['DEFAULT']['CHUNK_PATH'] = CHUNK_PATH
+        writeConfig()
+        if(self.import_textures):
+            self.parseMrl3(self.filepath.replace(".mod3",".mrl3"))
         if(self.use_layers):
             print("using layers")
         with open(self.filepath, 'rb') as content_file:
