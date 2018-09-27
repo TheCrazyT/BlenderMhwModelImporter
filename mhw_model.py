@@ -40,8 +40,8 @@ def init_config():
     print("config_filepath: %s" % config_filepath)
     config = configparser.ConfigParser()
     if not os.path.isfile(config_filepath):
-        config['DEFAULT']    = "d:\\tmp\\test"
-        config['CHUNK_PATH'] = "d:\\tmp\\chunk"
+        config['DEFAULT']['INSTALL_PATH'] = "d:\\tmp\\test"
+        config['DEFAULT']['CHUNK_PATH']   = "d:\\tmp\\chunk"
         writeConfig()
     config.read(config_filepath)
     if 'INSTALL_PATH' in config['DEFAULT']:
