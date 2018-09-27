@@ -10,8 +10,8 @@ bl_info = {
 }
  
  
-
- 
+import base64
+import zlib 
 import bpy
 import bmesh
 import os
@@ -74,6 +74,9 @@ class MODVertexBuffer818904dc:
             ReadHalfFloat(headerref.fl)
             ReadHalfFloat(headerref.fl)
             ReadLong(headerref.fl)
+    @staticmethod
+    def getSpaceAfterVert():
+        return 1+1+1+1+4+2+2+4
 
 class MODVertexBufferf06033f:
     def __init__(self,headerref,vertexcount):
@@ -99,7 +102,10 @@ class MODVertexBufferf06033f:
             ReadByte(headerref.fl)
             ReadByte(headerref.fl)
             ReadByte(headerref.fl)
-           
+    @staticmethod
+    def getSpaceAfterVert():
+        return 1+1+1+1+4+2+2+4+1+ 1+1+1
+
 class MODVertexBuffer81f58067:
     def __init__(self,headerref,vertexcount):
         print("MODVertexBuffer81f58067 %d" % vertexcount)
@@ -132,6 +138,9 @@ class MODVertexBuffer81f58067:
             ReadByte(headerref.fl)
             ReadByte(headerref.fl)
             ReadByte(headerref.fl)
+    @staticmethod
+    def getSpaceAfterVert():
+        return 1+1+1+1+4+2+2+4+1+1+1+1+1 +1+1+1+1+1+1+1
 class MODVertexBufferf471fe45:
     def __init__(self,headerref,vertexcount):
         print("MODVertexBufferf471fe45 %d" % vertexcount)
@@ -152,6 +161,9 @@ class MODVertexBufferf471fe45:
             ReadHalfFloat(headerref.fl)
             ReadHalfFloat(headerref.fl)
             ReadLong(headerref.fl)
+    @staticmethod
+    def getSpaceAfterVert():
+        return 1+1+1+1+4+2+2+4
 class MODVertexBuffer3c730760:
     def __init__(self,headerref,vertexcount):
         print("MODVertexBuffer3c730760 %d" % vertexcount)
@@ -182,6 +194,9 @@ class MODVertexBuffer3c730760:
             ReadByte(headerref.fl)
             ReadByte(headerref.fl)
             ReadByte(headerref.fl)
+    @staticmethod
+    def getSpaceAfterVert():
+        return 1+1+1+1+4+2+2+4+1+1+1+1+1+1+1+1
 class MODVertexBufferb2fc0083:
     def __init__(self,headerref,vertexcount):
         print("MODVertexBufferb2fc0083 %d" % vertexcount)
@@ -202,6 +217,9 @@ class MODVertexBufferb2fc0083:
             ReadHalfFloat(headerref.fl)
             ReadHalfFloat(headerref.fl)
             ReadLong(headerref.fl)
+    @staticmethod
+    def getSpaceAfterVert():
+        return 1+1+1+1+4+2+2+4
 class MODVertexBuffer366995a7:
     def __init__(self,headerref,vertexcount):
         print("MODVertexBuffer366995a7 %d" % vertexcount)
@@ -228,7 +246,9 @@ class MODVertexBuffer366995a7:
             for b in range(0,8):
                 Read8s(headerref.fl)
             ReadLong(headerref.fl)
-
+    @staticmethod
+    def getSpaceAfterVert():
+        return 1+1+1+1+4+2+2+4+1+1+1+1 + 8+4
 class MODVertexBufferc9690ab8:
     def __init__(self,headerref,vertexcount):
         print("MODVertexBufferc9690ab8 %d" % vertexcount)
@@ -248,7 +268,25 @@ class MODVertexBufferc9690ab8:
             ReadLong(headerref.fl)
             ReadHalfFloat(headerref.fl)
             ReadHalfFloat(headerref.fl)
-            ReadLong(headerref.fl)
+            ReadHalfFloat(headerref.fl)
+            ReadHalfFloat(headerref.fl)
+            ReadByte(headerref.fl)
+            ReadByte(headerref.fl)
+            ReadByte(headerref.fl)
+            ReadByte(headerref.fl)
+            
+            ReadByte(headerref.fl)
+            ReadByte(headerref.fl)
+            ReadByte(headerref.fl)
+            ReadByte(headerref.fl)
+            ReadByte(headerref.fl)
+            ReadByte(headerref.fl)
+            ReadByte(headerref.fl)
+            ReadByte(headerref.fl)
+    @staticmethod
+    def getSpaceAfterVert():
+        return 1+1+1+1+4+2+2+2+2+1+1+1+1 +1+1+1+1+1+1+1+1
+
 class MODVertexBuffer5e7f202d:
     def __init__(self,headerref,vertexcount):
         print("MODVertexBuffer5e7f202d %d" % vertexcount)
@@ -269,6 +307,9 @@ class MODVertexBuffer5e7f202d:
             ReadHalfFloat(headerref.fl)
             ReadHalfFloat(headerref.fl)
             ReadLong(headerref.fl)
+    @staticmethod
+    def getSpaceAfterVert():
+        return 1+1+1+1+4+2+2+4
 class MODVertexBufferd829702c:
     def __init__(self,headerref,vertexcount):
         print("MODVertexBufferd829702c %d" % vertexcount)
@@ -287,6 +328,9 @@ class MODVertexBufferd829702c:
             ReadLong(headerref.fl)
             ReadHalfFloat(headerref.fl)
             ReadHalfFloat(headerref.fl)
+    @staticmethod
+    def getSpaceAfterVert():
+        return 1+1+1+1+4+2+2
 class MODVertexBufferb8e69244:
     def __init__(self,headerref,vertexcount):
         print("MODVertexBufferd829702c %d" % vertexcount)
@@ -318,6 +362,10 @@ class MODVertexBufferb8e69244:
             ReadByte(headerref.fl)
             ReadByte(headerref.fl)
             ReadByte(headerref.fl)
+            
+    @staticmethod
+    def getSpaceAfterVert():
+        return 1+1+1+1+4+2+2+4+1+1+1+1+1*9+4 +1+1+1+1
 MODVertexBuffera5104ca0 = MODVertexBuffer5e7f202d
 MODVertexBufferf637401c = MODVertexBufferf06033f
 MODVertexBuffera756f2f9 = MODVertexBufferd829702c
@@ -378,6 +426,22 @@ def ReadVector3(fl):
     res = unpack("fff",content[pos[fl]:pos[fl]+4*3])
     pos[fl]+=4*3
     return res
+    
+def WriteFloats(fl,floats):
+    global pos,content
+    print("WriteFloats at 0x%08x %s" % (pos[fl],floats))
+    if pos[fl]==0:
+        raise Exception("Invalid write position")
+    p = pack("%df" % len(floats),*floats)
+    c1 = content[0:pos[fl]]
+    #print(p)
+    c2 = content[pos[fl]+len(floats)*4:]
+    pos[fl]+=len(floats)*4
+    content = c1 + p + c2
+def getPos(fl):
+    return pos[fl]
+
+    
 def CollectStrips(fl,modf=1):
     print("CollectStrips")
 
@@ -445,6 +509,7 @@ def fseek(fl,roffset):
     
 class MeshPart:
     def __init__(self,
+            uid,
             id,
             Material,
             LOD,
@@ -459,7 +524,9 @@ class MeshPart:
             meshdata,
             boneremapid,
             headerref,
-            loadmeshdata):
+            loadmeshdata,
+            writemeshdata):
+            self.uid = uid
             self.id = id
             self.Material = Material
             self.LOD = LOD
@@ -475,9 +542,56 @@ class MeshPart:
             self.boneremapid = boneremapid
             self.headerref = headerref
             self.loadmeshdataF = loadmeshdata
+            self.writemeshdataF = writemeshdata
     def loadmeshdata(self):
         self.loadmeshdataF(self)
+    def writeVertexes(self,fl):
+        print("writeVertexes uid:%d" % self.uid)
+        headerref = self.headerref
+        n = self.getName()
+        if not n in bpy.data.objects:
+            print("Mesh %s not found!" % n)
+            return
+        obj = bpy.data.objects[n]
+        bm = obj.data
+        my_id = bm.vertex_layers_int['id']
+        verts2 = sorted(bm.vertices, key=lambda v: my_id.data[v.index].value)
+        verts = [vert.co for vert in verts2]
+        
+        BOFF=self.VertexSub+self.FaceAdd
+        print("self.VertexOffset %08x" % (headerref.VertexOffset+self.VertexOffset+self.BlockSize*BOFF))
+        Seek(fl, (headerref.VertexOffset+self.VertexOffset+self.BlockSize*BOFF))
+        self.writemeshdataF(self,fl,verts)
+    def getName(self):
+        return "MyObject.%05d.%08x" % (self.uid,self.BlockType)
 
+class ExportMOD3(Operator, ImportHelper):
+    bl_idname = "custom_import.export_mhw"
+    bl_label = "Export MHW MOD file (.mod3)"
+ 
+    # ImportHelper mixin class uses this
+    filename_ext = ".mod3"
+ 
+    filter_glob = StringProperty(default="*.mod3", options={'HIDDEN'}, maxlen=255)
+    def execute(self, context):
+        global content,pos
+        if not 'data' in bpy.data.texts:
+            raise Exception("Make shure to import with \"Embed original data.\" first.")
+        dataText = bpy.data.texts['data'].lines[0].body
+        data = base64.b64decode(dataText)
+        content = zlib.decompress(data)
+        i = ImportMOD3(self)
+        i.init_main()
+        i.fl = 0
+        Seek(i.fl,0)
+        i.readHeader()
+        i.readMeshParts()
+        for p in i.parts:
+            p.writeVertexes(i.fl)
+        with open(self.filepath, 'wb') as content_file:
+            content_file.write(content)
+        return {'FINISHED'}
+        
 class ImportMOD3(Operator, ImportHelper):
     bl_idname = "custom_import.import_mhw"
     bl_label = "Load MHW MOD file (.mod3)"
@@ -513,25 +627,36 @@ class ImportMOD3(Operator, ImportHelper):
             description="Skip meshparts with low level of detail.",
             default=True,
     )
+    embed_data = BoolProperty(
+            name="Embed original data.",
+            description="Used for beeing able to export the object.",
+            default=False,
+    )
 
+    def init_main(self):
+        self.headerref = self
+        self.parts = []
+
+    
     def readHeader(self):
+        print("readHeader")
         fl = self.fl
         self.bendian = False
         self.ID = ReadLong(fl);
         if self.ID!=0x444f4d:
             raise Exception("Invalid Header")
-        self.Version = ReadByte(fl) #unsigned
+        self.Version = ReadByte(fl)
         self.Version2 = ReadByte(fl) 
-        self.BoneCount = ReadShort(fl) #unsigned
-        self.MeshCount = ReadShort(fl) #unsigned
-        self.MaterialCount = ReadShort(fl) #unsigned
-        self.VertexCount = ReadLong(fl) #unsigned
-        self.FaceCount = ReadLong(fl) #unsigned
-        self.VertexIds = ReadLong(fl) #unsigned
-        self.VertexBufferSize = ReadLong(fl) #unsigned
-        self.SecondBufferSize = ReadLong(fl) #unsigned
+        self.BoneCount = ReadShort(fl)
+        self.MeshCount = ReadShort(fl)
+        self.MaterialCount = ReadShort(fl)
+        self.VertexCount = ReadLong(fl)
+        self.FaceCount = ReadLong(fl)
+        self.VertexIds = ReadLong(fl)
+        self.VertexBufferSize = ReadLong(fl)
+        self.SecondBufferSize = ReadLong(fl)
         if self.Version < 190:
-            self.TextureCount = ReadLong(fl) #unsigned
+            self.TextureCount = ReadLong(fl)
         self.GroupCount = ReadPointer(fl,x64)
         if self.Version < 190 or self.Version > 220: 
             self.BoneMapCount = ReadPointer(fl,x64)
@@ -541,11 +666,11 @@ class ImportMOD3(Operator, ImportHelper):
         self.MeshOffset = ReadPointer(fl,x64)
         self.VertexOffset =ReadPointer(fl,x64)
         if self.Version < 190:
-            self.Vertex2Offset = ReadLong(fl) #unsigned
+            self.Vertex2Offset = ReadLong(fl)
         self.FacesOffset = ReadPointer(fl,x64)
         self.UnkOffset = ReadPointer(fl,x64)
         if self.Version < 190:
-            self.unkOffset2 = ReadLong(fl) #unsigned
+            self.unkOffset2 = ReadLong(fl)
             self.bbsphereposition = ReadVector3(fl)
             self.bbsphereradius = ReadFloat(fl)
             self.bbmin = ReadVector3(fl)
@@ -557,12 +682,30 @@ class ImportMOD3(Operator, ImportHelper):
 
         if self.Version == 237:
             self.BoneMapCount = None
+        print("%d" % pos[fl])
     
     def readBones(self):
         fl = self.fl
         Seek(fl,self.BonesOffset)
     
     
+    def writemeshdatav1(self,meshPart,fl,vertices):
+        raise Exception("NotImplementedError")
+    def writemeshdatav2(self,meshPart,fl,vertices):
+        raise Exception("NotImplementedError")
+    def writemeshdatav3(self,meshPart,fl,vertices):
+        print("writemeshdatav3 %s meshPart.VertexCount: %d , vertices: %d" % (meshPart.getName(),meshPart.VertexCount,len(vertices)))
+        if meshPart.VertexCount != len(vertices):
+            raise Exception("different vertices counts are not (yet) permitted!")
+        for v3 in vertices:
+            vl=[]
+            for v in v3:
+                vl.append(v)
+            if(len(vl) != 3):
+                raise Exception("verticesCount != 3")
+            WriteFloats(fl,vl)
+            fseek(fl,eval("MODVertexBuffer%08x" % meshPart.BlockType).getSpaceAfterVert())
+        
     def loadmeshdatav1(self,meshPart):
         f = eval("MODVertexBuffer%08x" % meshPart.BlockType)
         headerref = meshPart.headerref
@@ -595,7 +738,7 @@ class ImportMOD3(Operator, ImportHelper):
         else:
             raise Exception("Unknown block hash [%08x] for MTF v1 model format.\n" % meshPart.BlockType)
 
-    def readMeshPartv1(self):
+    def readMeshPartv1(self,uid):
         if self.bendian:
             fl = self.fl
             id = ReadBEShort(fl)
@@ -638,7 +781,8 @@ class ImportMOD3(Operator, ImportHelper):
             fseek(fl,6) #seek_cur
             boneremapid = ReadByte(fl)+1
             fseek(fl,5) #seek_cur
-        return MeshPart(id,
+        return MeshPart(uid,
+            id,
             Material,
             LOD,
             BlockSize,
@@ -652,30 +796,32 @@ class ImportMOD3(Operator, ImportHelper):
             None,
             boneremapid,
             self,
-            self.loadmeshdatav1)
+            self.loadmeshdatav1,
+            self.writemeshdatav1)
 
 
-    def readMeshPartv2(self):
+    def readMeshPartv2(self,uid):
         raise Exception("readMeshPartv2 not implemented")
-    def readMeshPartv3(self):
+    def readMeshPartv3(self,uid):
         headerref = self.headerref
-        ReadShort(headerref.fl) #unsigned
-        VertexCount = ReadShort(headerref.fl) #unsigned     
-        id = ReadShort(headerref.fl) #unsigned
-        ReadShort(headerref.fl) #unsigned
-        lod = ReadLong(headerref.fl) #unsigned
-        ReadShort(headerref.fl) #unsigned
-        BlockSize = ReadByte(headerref.fl) #unsigned
+        ReadShort(headerref.fl)
+        VertexCount = ReadShort(headerref.fl)     
+        id = ReadShort(headerref.fl)
+        ReadShort(headerref.fl)
+        lod = ReadLong(headerref.fl)
+        ReadShort(headerref.fl)
+        BlockSize = ReadByte(headerref.fl)
         ReadByte(headerref.fl)
-        VertexSub = ReadLong(headerref.fl) #unsigned
-        VertexOffset = ReadLong(headerref.fl) #unsigned
-        BlockType = ReadLong(headerref.fl) #unsigned
-        FaceOffset = ReadLong(headerref.fl) #unsigned
-        FaceCount = ReadLong(headerref.fl) #unsigned
-        FaceAdd = ReadLong(headerref.fl) #unsigned
+        VertexSub = ReadLong(headerref.fl)
+        VertexOffset = ReadLong(headerref.fl)
+        BlockType = ReadLong(headerref.fl)
+        FaceOffset = ReadLong(headerref.fl)
+        FaceCount = ReadLong(headerref.fl)
+        FaceAdd = ReadLong(headerref.fl)
         boneremapid = ReadByte(headerref.fl)+1
         fseek(headerref.fl,39) #seek_cur
-        return MeshPart(id,
+        return MeshPart(uid,
+            id,
             None,
             lod,
             BlockSize,
@@ -689,9 +835,11 @@ class ImportMOD3(Operator, ImportHelper):
             None,
             boneremapid,
             self,
-            self.loadmeshdatav3)
+            self.loadmeshdatav3,
+            self.writemeshdatav3)
     
     def readMeshParts(self):
+        print("readMeshParts, meshOffset: %08x" % self.MeshOffset)
         Seek(self.fl,self.MeshOffset)
         if(self.Version == 237):
             readMeshPart = self.readMeshPartv3
@@ -700,7 +848,8 @@ class ImportMOD3(Operator, ImportHelper):
         else:
             readMeshPart = self.readMeshPartv2
         for i in range(0,self.MeshCount):
-           self.parts.append(readMeshPart())
+           self.parts.append(readMeshPart(i))
+        print("%d %d" % (len(self.parts),self.MeshCount))
 
     def readVertexes(self):
         Seek(self.fl,self.VertexOffset)
@@ -725,7 +874,7 @@ class ImportMOD3(Operator, ImportHelper):
             content = content_file.read()
 
         fl      = 1
-        pos[fl] = 0
+        Seek(fl,0)
         ReadLong(fl)
         for u in range(0,12):
             ReadByte(fl)
@@ -750,6 +899,7 @@ class ImportMOD3(Operator, ImportHelper):
     
     def execute(self, context):
         global content,CHUNK_PATH
+        self.init_main()
         CHUNK_PATH = self.chunk_path
         if CHUNK_PATH[len(CHUNK_PATH)-1] == '\\':
             CHUNK_PATH = CHUNK_PATH[0:len(CHUNK_PATH)-1]
@@ -767,10 +917,22 @@ class ImportMOD3(Operator, ImportHelper):
         with open(self.filepath, 'rb') as content_file:
             fl = 0
             content = content_file.read()
+            if self.embed_data:
+                cdata = zlib.compress(content)
+                print("len of compressed-data: %d" % len(cdata))
+                data = base64.b64encode(cdata).decode("utf-8")
+                print("len of b64-data: %d" % len(data))
+                if('data' in bpy.data.texts):
+                    dataText = bpy.data.texts['data']
+                    dataText.clear()
+                else:
+                    dataText = bpy.data.texts.new('data')
+                dataText.from_string(data)
+        self.startImport(fl,content)
+        return {'FINISHED'}        
+    def startImport(self,fl,content):
         self.fl = fl
-        self.headerref = self
-        self.parts = []
-        pos[fl] = 0
+        Seek(fl,0)
             
         self.readHeader()
         self.readBones()
@@ -779,21 +941,30 @@ class ImportMOD3(Operator, ImportHelper):
         
         fi = 0
         pi = 0
+        print("self.parts: %d" % len(self.parts))
         for m in self.parts:
             if (self.only_import_lod_1) and (m.LOD!=1):
+                pi += 1
                 continue
             if m.meshdata != None:
                 bm = bmesh.new()
+                my_id = bm.verts.layers.int.new('id')
+                bm.verts.ensure_lookup_table()
                 mesh = bpy.data.meshes.new("mesh")  # add a new mesh
-                obj = bpy.data.objects.new("MyObject.%05d.%08x" % (pi,m.BlockType), mesh)  # add a new object using the mesh
-                #print("%d     %d" % (m.VertexCount,len(m.meshdata.vertarray)))
+                s = m.getName()
+                obj = bpy.data.objects.new(s, mesh)  # add a new object using the mesh
+                print("%s %d     %d" % (s,m.VertexCount,len(m.meshdata.vertarray)))
                 verts  = []
                 verts2 = []
                 faces = []
+                vi = 0
                 for v in m.meshdata.vertarray:
                     #print(v)
                     verts2.append(v)
-                    verts.append(bm.verts.new(v))
+                    bmv = bm.verts.new(v)
+                    bmv[my_id] = vi
+                    verts.append(bmv)
+                    vi += 1
                 for f in m.meshdata.facearray:
                     addFace=True
                     for x in f:
@@ -836,20 +1007,26 @@ class ImportMOD3(Operator, ImportHelper):
             #break
 
 
-        return {'FINISHED'}
+        
 # Only needed if you want to add into a dynamic menu
 def menu_func_import(self, context):
     self.layout.operator(ImportMOD3.bl_idname, text="MHW MOD (.mod3)")
+def menu_func_export(self, context):
+    self.layout.operator(ExportMOD3.bl_idname, text="MHW MOD (.mod3)")
 
 
 def register():
     bpy.utils.register_class(ImportMOD3)
+    bpy.utils.register_class(ExportMOD3)
     bpy.types.INFO_MT_file_import.append(menu_func_import)
+    bpy.types.INFO_MT_file_export.append(menu_func_export)
  
  
 def unregister():
     bpy.utils.unregister_class(ImportMOD3)
+    bpy.utils.unregister_class(ExportMOD3)
     bpy.types.INFO_MT_file_import.remove(menu_func_import)
+    bpy.types.INFO_MT_file_export.remove(menu_func_export)
  
  
 if __name__ == "__main__":
