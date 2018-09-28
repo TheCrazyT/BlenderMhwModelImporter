@@ -1,6 +1,6 @@
-[Download binaries (tar.gz)](https://bintray.com/thecrazyt/BlenderMhwModelImporter/download_file?file_path=0.2%2FMHWImporter.tar.gz)
+[Download binaries (tar.gz)](https://bintray.com/thecrazyt/BlenderMhwModelImporter/download_file?file_path=0.2%2FBlenderMhwModelImporter.tar.gz)
 
-[Download binaries (zip)](https://bintray.com/thecrazyt/BlenderMhwModelImporter/download_file?file_path=0.2%2FMHWImporter.zip)
+[Download binaries (zip)](https://bintray.com/thecrazyt/BlenderMhwModelImporter/download_file?file_path=0.2%2FBlenderMhwModelImporter.zip)
 
 If you use texture.py, make shure to setup the Install-Path at the file-import dialog.
 

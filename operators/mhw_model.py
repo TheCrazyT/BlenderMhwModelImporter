@@ -846,10 +846,9 @@ class ImportMOD3(Operator, ImportHelper):
 
     def parseMrl3(self,filepath):
         global PATH,CHUNK_PATH,content
-        
-        import mhw_texture
-        mhw_texture.PATH = PATH
-        mhw_texture.CHUNK_PATH = CHUNK_PATH
+
+        from .mhw_texture import doImportTex
+
         
         if not os.path.isfile(filepath):
             dbg("%s not found" % filepath)
@@ -883,7 +882,7 @@ class ImportMOD3(Operator, ImportHelper):
                     tex = "%s%s"  % (tex,by)
             texpath = "%s\\%s.tex" % (CHUNK_PATH,tex)
             dbg("importing texture: %s" % (texpath))
-            mhw_texture.doImportTex(texpath)
+            doImportTex(texpath)
     
     def execute(self, context):
         global content,CHUNK_PATH
