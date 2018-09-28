@@ -23,4 +23,4 @@ script:
 - mkdir build
 - sed -i s/True/False/ dbg.py
 - tar -czf build/MHWImporter.tar.gz  __init__.py operators Scarlet
-- zip build/MHWImporter.zip  __init__.py operators Scarlet
+- zip -r build/MHWImporter.zip  __init__.py operators Scarlet
