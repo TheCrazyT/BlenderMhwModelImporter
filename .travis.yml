@@ -7,6 +7,7 @@ deploy:
   key:
     secure: rF4vGv+JTXedMOoq4iZoGwajcT3OU5ZyBHaHIYYR/3qGsdkEBqd0lL6tshl4lpwymOMuT53kN8fmBLXF5+7csQRUsyhDbUDsidS2e3gCyZuXm1Vndzkm0U4tdlexjtDPjcBE4317lBu80otwh6UQ16ik6fQnqBWM+1Ksm4DfBeEDszCzZ1sMqYx9vXciJgS9Q9sjTWR7lYfH18NVByf4aIFLs7MrK3q1jfJ9D6kWGYRDO77kVVE7bO8hdsnBGvhpkMm7k0fhe8rIj9ysQrOI0YQ/d1x4rR2Rd72r94i0v4ndj5rNdtve0GBMC0hUq/LTBFYzInD+ItJ0IVkuGL5oH9bKYvnkQXarYWlih+82mDrnnxiyF2I6t+dr0BOIjRidlwTo4dK0pZd2q32yuFkHImqvwBd7uUdKWZeAVUHwvS5D5WM31KRcjFvNZuwMdkzMuhbM8eNA0IPIKzZ2Cg67u4XTymypqtQf+5GZJRCuum5trTdgogiu6sW3M2dc7lAxtSMhxSIt+fvF9mECQw/KC81tiqvwDJ5BCUzpL5aw5JvcJiRdh7vmBRPX1Fc7tVL0ZiB/VaPlT2XS2UZ9jHoZckO9LOo/4o/fyxMVJW8ORpsxUegYB7VAYhGELpQc5UWRj0BbZK0uAqNanYhR0Kcyt/UOxP3ZJMXNwWt9xEGN4Ss=
 install:
+- sudo apt-get install -y zip
 - cd Scarlet && wget -O ScarletTestApp.pdb https://bintray.com/thecrazyt/Scarlet/download_file?file_path=0.9%2FScarletTestApp.pdb
   && wget -O ScarletTestApp.exe https://bintray.com/thecrazyt/Scarlet/download_file?file_path=0.9%2FScarletTestApp.exe
   && wget -O Scarlet.pdb        https://bintray.com/thecrazyt/Scarlet/download_file?file_path=0.9%2FScarlet.pdb
@@ -20,4 +21,6 @@ install:
 - cd .. && pwd && ls
 script:
 - mkdir build
-- tar -czf build/MHWImporter.tar.gz mhw_model.py mhw_texture.py Scarlet
+- sed -i s/True/False/ dbg.py
+- tar -czf build/MHWImporter.tar.gz  __init__.py operators Scarlet
+- zip build/MHWImporter.zip  __init__.py operators Scarlet

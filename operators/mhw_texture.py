@@ -17,49 +17,17 @@ import os
 import subprocess
 from os import listdir
 from os.path import isfile, join
+from ..config import writeConfig,initConfig,setInstallPath,setChunkPath
+from ..dbg import dbg
 
-def writeConfig():
-    global config_path,config
-    f = open(config_filepath,"w+")
-    f.write("[DEFAULT]\n")
-    for x in config['DEFAULT']:
-        f.write("%s=%s\n" % (x,config['DEFAULT'][x]))
-    f.close()
-    print("write config:")
-    print({section: dict(config[section]) for section in config.sections()})
-
-def init_config():
-    global config_filepath,config,PATH,CHUNK_PATH
-    config_path = bpy.utils.user_resource('CONFIG', path='scripts', create=True)
-    config_filepath = os.path.join(config_path, "mhw_importer.config")
-    print("config_filepath: %s" % config_filepath)
-    config = configparser.ConfigParser()
-    if not os.path.isfile(config_filepath):
-        config['DEFAULT']    = "d:\\tmp\\test"
-        config['CHUNK_PATH'] = "d:\\tmp\\chunk"
-        writeConfig()
-    config.read(config_filepath)
-    if 'INSTALL_PATH' in config['DEFAULT']:
-        PATH = config['DEFAULT']['INSTALL_PATH']
-    else:
-        PATH = "d:\\tmp\\test"
-    if 'CHUNK_PATH' in config['DEFAULT']:
-        CHUNK_PATH = config['DEFAULT']['CHUNK_PATH']
-    else:
-        CHUNK_PATH = "d:\\tmp\\chunk"
-
-
-
-
-init_config()
-
+(config,CHUNK_PATH,PATH) = initConfig()
     
 def doImportTex(filePath):
     ScarletPath = "%s\\Scarlet" % PATH
     tempdir  = tempfile.mkdtemp()
-    print("tempdir: %s" % tempdir)
+    dbg("tempdir: %s" % tempdir)
     prm = ["%s\\ScarletTestApp.exe"%ScarletPath,filePath,"--output",tempdir]
-    print("execute %s" % prm)
+    dbg("execute %s" % prm)
     FNULL = open(os.devnull, 'r')
     try:
         subprocess.check_call(prm,stdin=FNULL, shell=False)
@@ -72,7 +40,7 @@ def doImportTex(filePath):
     for f in onlyfiles:
         if "Image 0" in f:
             imgPath = "%s\\%s" % (tempdir,f)
-            print("adding image %s" % imgPath)
+            dbg("adding image %s" % imgPath)
             img = bpy.data.images.load(imgPath)
             material = bpy.data.materials.new("Mat%d" % i)
             imtex = bpy.data.textures.new('ImageTex%d' % i ,"IMAGE")
@@ -99,7 +67,7 @@ class ImportTEX(Operator, ImportHelper):
         if not os.path.isdir(PATH):
             raise Exception("Install path %s not found!" % PATH)
             
-        config['DEFAULT']['INSTALL_PATH'] = PATH
+        setInstallPath(PATH)
         writeConfig()
 
         filePath = self.filepath
@@ -111,20 +79,3 @@ class ImportTEX(Operator, ImportHelper):
 def menu_func_import(self, context):
     self.layout.operator(ImportTEX.bl_idname, text="MHW TEX (.tex)")
 
-def register():
-    global PATH,config_filepath
-    bpy.utils.register_class(ImportTEX)
-    bpy.types.INFO_MT_file_import.append(menu_func_import)
- 
- 
-def unregister():
-    bpy.utils.unregister_class(ImportTEX)
-    bpy.types.INFO_MT_file_import.remove(menu_func_import)
- 
- 
-if __name__ == "__main__":
-    try:
-        unregister()
-    except:
-        pass
-    register()

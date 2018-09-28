@@ -21,43 +21,16 @@ from bpy.props import StringProperty, BoolProperty, EnumProperty
 from bpy.types import Operator
 from mathutils import Vector, Matrix, Euler
 from struct import unpack, pack
+from ..config import writeConfig,initConfig,setInstallPath,setChunkPath
+from ..dbg import dbg
+
 x64=64
 
-def writeConfig():
-    global config_path,config
-    f = open(config_filepath,"w+")
-    f.write("[DEFAULT]\n")
-    for x in config['DEFAULT']:
-        f.write("%s=%s\n" % (x,config['DEFAULT'][x]))
-    f.close()
-    print("write config:")
-    print({section: dict(config[section]) for section in config.sections()})
-
-def init_config():
-    global config_filepath,config,PATH,CHUNK_PATH
-    config_path = bpy.utils.user_resource('CONFIG', path='scripts', create=True)
-    config_filepath = os.path.join(config_path, "mhw_importer.config")
-    print("config_filepath: %s" % config_filepath)
-    config = configparser.ConfigParser()
-    if not os.path.isfile(config_filepath):
-        config['DEFAULT']['INSTALL_PATH'] = "d:\\tmp\\test"
-        config['DEFAULT']['CHUNK_PATH']   = "d:\\tmp\\chunk"
-        writeConfig()
-    config.read(config_filepath)
-    if 'INSTALL_PATH' in config['DEFAULT']:
-        PATH = config['DEFAULT']['INSTALL_PATH']
-    else:
-        PATH = "d:\\tmp\\test"
-    if 'CHUNK_PATH' in config['DEFAULT']:
-        CHUNK_PATH = config['DEFAULT']['CHUNK_PATH']
-    else:
-        CHUNK_PATH = "d:\\tmp\\chunk"
-    
-init_config()
+(config,CHUNK_PATH,PATH) = initConfig()
 
 class MODVertexBuffer818904dc:
     def __init__(self,headerref,vertexcount):
-        print("MODVertexBuffer818904dc %d" % vertexcount)
+        dbg("MODVertexBuffer818904dc %d" % vertexcount)
         self.vertarray   = []
         self.headerref   = headerref
         self.vertexcount = vertexcount
@@ -80,7 +53,7 @@ class MODVertexBuffer818904dc:
 
 class MODVertexBufferf06033f:
     def __init__(self,headerref,vertexcount):
-        print("MODVertexBufferf06033f %d" % vertexcount)
+        dbg("MODVertexBufferf06033f %d" % vertexcount)
         self.vertarray   = []
         self.headerref   = headerref
         self.vertexcount = vertexcount
@@ -108,7 +81,7 @@ class MODVertexBufferf06033f:
 
 class MODVertexBuffer81f58067:
     def __init__(self,headerref,vertexcount):
-        print("MODVertexBuffer81f58067 %d" % vertexcount)
+        dbg("MODVertexBuffer81f58067 %d" % vertexcount)
         self.vertarray   = []
         self.headerref   = headerref
         self.vertexcount = vertexcount
@@ -143,7 +116,7 @@ class MODVertexBuffer81f58067:
         return 1+1+1+1+4+2+2+4+1+1+1+1+1 +1+1+1+1+1+1+1
 class MODVertexBufferf471fe45:
     def __init__(self,headerref,vertexcount):
-        print("MODVertexBufferf471fe45 %d" % vertexcount)
+        dbg("MODVertexBufferf471fe45 %d" % vertexcount)
         raise Exception("ToDo")
         self.vertarray   = []
         self.headerref   = headerref
@@ -166,7 +139,7 @@ class MODVertexBufferf471fe45:
         return 1+1+1+1+4+2+2+4
 class MODVertexBuffer3c730760:
     def __init__(self,headerref,vertexcount):
-        print("MODVertexBuffer3c730760 %d" % vertexcount)
+        dbg("MODVertexBuffer3c730760 %d" % vertexcount)
         self.vertarray   = []
         self.headerref   = headerref
         self.vertexcount = vertexcount
@@ -199,7 +172,7 @@ class MODVertexBuffer3c730760:
         return 1+1+1+1+4+2+2+4+1+1+1+1+1+1+1+1
 class MODVertexBufferb2fc0083:
     def __init__(self,headerref,vertexcount):
-        print("MODVertexBufferb2fc0083 %d" % vertexcount)
+        dbg("MODVertexBufferb2fc0083 %d" % vertexcount)
         raise Exception("ToDo")
         self.vertarray   = []
         self.headerref   = headerref
@@ -222,7 +195,7 @@ class MODVertexBufferb2fc0083:
         return 1+1+1+1+4+2+2+4
 class MODVertexBuffer366995a7:
     def __init__(self,headerref,vertexcount):
-        print("MODVertexBuffer366995a7 %d" % vertexcount)
+        dbg("MODVertexBuffer366995a7 %d" % vertexcount)
         self.vertarray   = []
         self.headerref   = headerref
         self.vertexcount = vertexcount
@@ -251,7 +224,7 @@ class MODVertexBuffer366995a7:
         return 1+1+1+1+4+2+2+4+1+1+1+1 + 8+4
 class MODVertexBufferc9690ab8:
     def __init__(self,headerref,vertexcount):
-        print("MODVertexBufferc9690ab8 %d" % vertexcount)
+        dbg("MODVertexBufferc9690ab8 %d" % vertexcount)
         raise Exception("ToDo")
         self.vertarray   = []
         self.headerref   = headerref
@@ -289,7 +262,7 @@ class MODVertexBufferc9690ab8:
 
 class MODVertexBuffer5e7f202d:
     def __init__(self,headerref,vertexcount):
-        print("MODVertexBuffer5e7f202d %d" % vertexcount)
+        dbg("MODVertexBuffer5e7f202d %d" % vertexcount)
         raise Exception("ToDo")
         self.vertarray   = []
         self.headerref   = headerref
@@ -312,7 +285,7 @@ class MODVertexBuffer5e7f202d:
         return 1+1+1+1+4+2+2+4
 class MODVertexBufferd829702c:
     def __init__(self,headerref,vertexcount):
-        print("MODVertexBufferd829702c %d" % vertexcount)
+        dbg("MODVertexBufferd829702c %d" % vertexcount)
         self.vertarray   = []
         self.headerref   = headerref
         self.vertexcount = vertexcount
@@ -333,7 +306,7 @@ class MODVertexBufferd829702c:
         return 1+1+1+1+4+2+2
 class MODVertexBufferb8e69244:
     def __init__(self,headerref,vertexcount):
-        print("MODVertexBufferd829702c %d" % vertexcount)
+        dbg("MODVertexBufferd829702c %d" % vertexcount)
         self.vertarray   = []
         self.headerref   = headerref
         self.vertexcount = vertexcount
@@ -429,12 +402,12 @@ def ReadVector3(fl):
     
 def WriteFloats(fl,floats):
     global pos,content
-    print("WriteFloats at 0x%08x %s" % (pos[fl],floats))
+    dbg("WriteFloats at 0x%08x %s" % (pos[fl],floats))
     if pos[fl]==0:
         raise Exception("Invalid write position")
     p = pack("%df" % len(floats),*floats)
     c1 = content[0:pos[fl]]
-    #print(p)
+    #dbg(p)
     c2 = content[pos[fl]+len(floats)*4:]
     pos[fl]+=len(floats)*4
     content = c1 + p + c2
@@ -443,7 +416,7 @@ def getPos(fl):
 
     
 def CollectStrips(fl,modf=1):
-    print("CollectStrips")
+    dbg("CollectStrips")
 
     resarray = []
     f1t = ReadShort(fl)
@@ -466,19 +439,19 @@ def CollectStrips(fl,modf=1):
             f += 1
     return resarray
 def CollectTris(fl,num,modf=1):
-    print("CollectTris %d" % num)
+    dbg("CollectTris %d" % num)
     res = []
     for i in range(0 ,num):
         res.append([x+modf for x in [ReadShort(fl) , ReadShort(fl) ,ReadShort(fl)]])
     return res
 def CollectBETris(fl,num,modf=1):
-    print("CollectBETris %d" % num)
+    dbg("CollectBETris %d" % num)
     res = []
     for i in range(0 ,num):
         res.append([x+modf for x in [ReadBEShort(fl) , ReadBEShort(fl) ,ReadBEShort(fl)]])
     return res
 def CollectBEStrips(fl,modf=1):
-    print("CollectBEStrips")
+    dbg("CollectBEStrips")
     resarray = []
     f1t = ReadBEShort(fl)
     f2t = ReadBEShort(fl) 
@@ -546,11 +519,11 @@ class MeshPart:
     def loadmeshdata(self):
         self.loadmeshdataF(self)
     def writeVertexes(self,fl):
-        print("writeVertexes uid:%d" % self.uid)
+        dbg("writeVertexes uid:%d" % self.uid)
         headerref = self.headerref
         n = self.getName()
         if not n in bpy.data.objects:
-            print("Mesh %s not found!" % n)
+            dbg("Mesh %s not found!" % n)
             return
         obj = bpy.data.objects[n]
         bm = obj.data
@@ -559,7 +532,7 @@ class MeshPart:
         verts = [vert.co for vert in verts2]
         
         BOFF=self.VertexSub+self.FaceAdd
-        print("self.VertexOffset %08x" % (headerref.VertexOffset+self.VertexOffset+self.BlockSize*BOFF))
+        dbg("self.VertexOffset %08x" % (headerref.VertexOffset+self.VertexOffset+self.BlockSize*BOFF))
         Seek(fl, (headerref.VertexOffset+self.VertexOffset+self.BlockSize*BOFF))
         self.writemeshdataF(self,fl,verts)
     def getName(self):
@@ -573,13 +546,23 @@ class ExportMOD3(Operator, ImportHelper):
     filename_ext = ".mod3"
  
     filter_glob = StringProperty(default="*.mod3", options={'HIDDEN'}, maxlen=255)
+    
+    #overwrite_lod = BoolProperty(name="Force LOD1 (experimentel)",
+    #            description="overwrite the level of detail of the other meshes (for example if you used 'Only import high LOD-parts').",
+    #            default=False)
     def execute(self, context):
         global content,pos
         if not 'data' in bpy.data.texts:
-            raise Exception("Make shure to import with \"Embed original data.\" first.")
+            raise Exception("Make shure to import with \"Reference/Embed original data.\" first.")
         dataText = bpy.data.texts['data'].lines[0].body
-        data = base64.b64decode(dataText)
-        content = zlib.decompress(data)
+        if dataText[0:5]=="path:":
+            path = dataText[5:]
+            dbg("path:%s" % path)
+            with open(path, 'rb') as content_file:
+                content = content_file.read()
+        else:
+            data = base64.b64decode(dataText)
+            content = zlib.decompress(data)
         i = ImportMOD3(self)
         i.init_main()
         i.fl = 0
@@ -603,9 +586,9 @@ class ImportMOD3(Operator, ImportHelper):
     
     
     chunk_path = StringProperty(
-        name="Chunk path",
-        description="Path to chunk folder (containing template.mrl3 for example)",
-        default=CHUNK_PATH,
+            name="Chunk path",
+            description="Path to chunk folder (containing template.mrl3 for example)",
+            default=CHUNK_PATH,
     )
     install_path = StringProperty(
             name="Install path.",
@@ -632,6 +615,11 @@ class ImportMOD3(Operator, ImportHelper):
             description="Used for beeing able to export the object.",
             default=False,
     )
+    reference_data = BoolProperty(
+            name="Reference original data.",
+            description="Instead of embedding all data just add the path to the file. This is faster than embed data, but you need to make shure the file never gets deleted,changed or moved.",
+            default=False,
+    )
 
     def init_main(self):
         self.headerref = self
@@ -639,7 +627,7 @@ class ImportMOD3(Operator, ImportHelper):
 
     
     def readHeader(self):
-        print("readHeader")
+        dbg("readHeader")
         fl = self.fl
         self.bendian = False
         self.ID = ReadLong(fl);
@@ -682,7 +670,7 @@ class ImportMOD3(Operator, ImportHelper):
 
         if self.Version == 237:
             self.BoneMapCount = None
-        print("%d" % pos[fl])
+        dbg("%d" % pos[fl])
     
     def readBones(self):
         fl = self.fl
@@ -694,7 +682,7 @@ class ImportMOD3(Operator, ImportHelper):
     def writemeshdatav2(self,meshPart,fl,vertices):
         raise Exception("NotImplementedError")
     def writemeshdatav3(self,meshPart,fl,vertices):
-        print("writemeshdatav3 %s meshPart.VertexCount: %d , vertices: %d" % (meshPart.getName(),meshPart.VertexCount,len(vertices)))
+        dbg("writemeshdatav3 %s meshPart.VertexCount: %d , vertices: %d" % (meshPart.getName(),meshPart.VertexCount,len(vertices)))
         if meshPart.VertexCount != len(vertices):
             raise Exception("different vertices counts are not (yet) permitted!")
         for v3 in vertices:
@@ -839,7 +827,7 @@ class ImportMOD3(Operator, ImportHelper):
             self.writemeshdatav3)
     
     def readMeshParts(self):
-        print("readMeshParts, meshOffset: %08x" % self.MeshOffset)
+        dbg("readMeshParts, meshOffset: %08x" % self.MeshOffset)
         Seek(self.fl,self.MeshOffset)
         if(self.Version == 237):
             readMeshPart = self.readMeshPartv3
@@ -849,7 +837,7 @@ class ImportMOD3(Operator, ImportHelper):
             readMeshPart = self.readMeshPartv2
         for i in range(0,self.MeshCount):
            self.parts.append(readMeshPart(i))
-        print("%d %d" % (len(self.parts),self.MeshCount))
+        dbg("%d %d" % (len(self.parts),self.MeshCount))
 
     def readVertexes(self):
         Seek(self.fl,self.VertexOffset)
@@ -864,7 +852,7 @@ class ImportMOD3(Operator, ImportHelper):
         mhw_texture.CHUNK_PATH = CHUNK_PATH
         
         if not os.path.isfile(filepath):
-            print("%s not found" % filepath)
+            dbg("%s not found" % filepath)
             return
         
         if not os.path.isdir(CHUNK_PATH):
@@ -894,7 +882,7 @@ class ImportMOD3(Operator, ImportHelper):
                     by = chr(b)
                     tex = "%s%s"  % (tex,by)
             texpath = "%s\\%s.tex" % (CHUNK_PATH,tex)
-            print("importing texture: %s" % (texpath))
+            dbg("importing texture: %s" % (texpath))
             mhw_texture.doImportTex(texpath)
     
     def execute(self, context):
@@ -907,27 +895,35 @@ class ImportMOD3(Operator, ImportHelper):
         if not os.path.isdir(PATH):
             raise Exception("Install path %s not found!" % PATH)
             
-        config['DEFAULT']['INSTALL_PATH'] = PATH
-        config['DEFAULT']['CHUNK_PATH'] = CHUNK_PATH
+        setInstallPath(PATH)
+        setChunkPath(CHUNK_PATH)
         writeConfig()
         if(self.import_textures):
             self.parseMrl3(self.filepath.replace(".mod3",".mrl3"))
         if(self.use_layers):
-            print("using layers")
+            dbg("using layers")
         with open(self.filepath, 'rb') as content_file:
             fl = 0
             content = content_file.read()
-            if self.embed_data:
-                cdata = zlib.compress(content)
-                print("len of compressed-data: %d" % len(cdata))
-                data = base64.b64encode(cdata).decode("utf-8")
-                print("len of b64-data: %d" % len(data))
+            if self.reference_data:
                 if('data' in bpy.data.texts):
                     dataText = bpy.data.texts['data']
                     dataText.clear()
                 else:
                     dataText = bpy.data.texts.new('data')
-                dataText.from_string(data)
+                dataText.from_string("path:%s" % self.filepath)
+            else:
+                if self.embed_data:
+                    cdata = zlib.compress(content)
+                    dbg("len of compressed-data: %d" % len(cdata))
+                    data = base64.b64encode(cdata).decode("utf-8")
+                    dbg("len of b64-data: %d" % len(data))
+                    if('data' in bpy.data.texts):
+                        dataText = bpy.data.texts['data']
+                        dataText.clear()
+                    else:
+                        dataText = bpy.data.texts.new('data')
+                    dataText.from_string(data)
         self.startImport(fl,content)
         return {'FINISHED'}        
     def startImport(self,fl,content):
@@ -941,7 +937,7 @@ class ImportMOD3(Operator, ImportHelper):
         
         fi = 0
         pi = 0
-        print("self.parts: %d" % len(self.parts))
+        dbg("self.parts: %d" % len(self.parts))
         for m in self.parts:
             if (self.only_import_lod_1) and (m.LOD!=1):
                 pi += 1
@@ -953,13 +949,13 @@ class ImportMOD3(Operator, ImportHelper):
                 mesh = bpy.data.meshes.new("mesh")  # add a new mesh
                 s = m.getName()
                 obj = bpy.data.objects.new(s, mesh)  # add a new object using the mesh
-                print("%s %d     %d" % (s,m.VertexCount,len(m.meshdata.vertarray)))
+                dbg("%s %d     %d" % (s,m.VertexCount,len(m.meshdata.vertarray)))
                 verts  = []
                 verts2 = []
                 faces = []
                 vi = 0
                 for v in m.meshdata.vertarray:
-                    #print(v)
+                    #dbg(v)
                     verts2.append(v)
                     bmv = bm.verts.new(v)
                     bmv[my_id] = vi
@@ -970,14 +966,14 @@ class ImportMOD3(Operator, ImportHelper):
                     for x in f:
                         if x>=len(verts):
                             addFace = False
-                            #print("%d not in verts [%d]" % (x,len(verts)))
+                            #dbg("%d not in verts [%d]" % (x,len(verts)))
                     if addFace:
                         #if fi<30:
                         vts  = [verts[x] for x in f]
                         vts2 = [verts2[x] for x in f]
-                        #print(vts)
-                        #print(vts2)
-                        #print(f)
+                        #dbg(vts)
+                        #dbg(vts2)
+                        #dbg(f)
                         faces.append(vts)
                         fi+=1
                         try:
@@ -1015,23 +1011,3 @@ def menu_func_export(self, context):
     self.layout.operator(ExportMOD3.bl_idname, text="MHW MOD (.mod3)")
 
 
-def register():
-    bpy.utils.register_class(ImportMOD3)
-    bpy.utils.register_class(ExportMOD3)
-    bpy.types.INFO_MT_file_import.append(menu_func_import)
-    bpy.types.INFO_MT_file_export.append(menu_func_export)
- 
- 
-def unregister():
-    bpy.utils.unregister_class(ImportMOD3)
-    bpy.utils.unregister_class(ExportMOD3)
-    bpy.types.INFO_MT_file_import.remove(menu_func_import)
-    bpy.types.INFO_MT_file_export.remove(menu_func_export)
- 
- 
-if __name__ == "__main__":
-    try:
-        unregister()
-    except:
-        pass
-    register()
