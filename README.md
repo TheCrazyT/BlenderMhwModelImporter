@@ -1,7 +1,5 @@
-[Download binaries (tar.gz)](https://bintray.com/thecrazyt/BlenderMhwModelImporter/download_file?file_path=0.2%2FBlenderMhwModelImporter.tar.gz)
-
-[Download binaries (zip)](https://bintray.com/thecrazyt/BlenderMhwModelImporter/download_file?file_path=0.2%2FBlenderMhwModelImporter.zip)
-
+[ ![Download](https://api.bintray.com/packages/thecrazyt/BlenderMhwModelImporter/BlenderMhwModelImporter/images/download.svg) ](https://bintray.com/thecrazyt/BlenderMhwModelImporter/BlenderMhwModelImporter/_latestVersion)
+ 
 If you use texture.py, make shure to setup the Install-Path at the file-import dialog.
 
 27.09.2018:
@@ -14,6 +12,11 @@ Refractored some redundant code (config).
 Added debug-module wich is has disabled debug output on release package (faster).
 Cleaned up/structorized code.
 
+29.09.2018:
+Added possibility to import objects with by their lod-level.
+Added option to group objects by lod-level into the layers.
+Added dropdowns for some options (instead of checkboxes) to make the selection a bit better, because some options don't work together anyway.
+Added version number to the addon.
 
 Quick install instructions:
  Extract the files and folders of the archive into a new folder and copy that folder to:

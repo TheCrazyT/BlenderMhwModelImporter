@@ -6,7 +6,8 @@ bl_info = {
     "name": "MHW Model importer",
     "category": "Import-Export",
     "author": "CrazyT",
-    "location": "File > Import"
+    "location": "File > Import",
+    "version": "{VERSION}"
 }
  
  

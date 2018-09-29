@@ -1,14 +1,25 @@
 #Ported to blender from "MT Framework tools" https://www.dropbox.com/s/4ufvrgkdsioe3a6/MT%20Framework.mzp?dl=0 
 #(https://lukascone.wordpress.com/2017/06/18/mt-framework-tools/)
 
+EMBED_MODE_NONE = "embed_none"
+EMBED_MODE_REFERENCE = "embed_reference"
+EMBED_MODE_DATA = "embed_data"
+
+LAYER_MODE_NONE = "layer_none"
+LAYER_MODE_PARTS = "layer_parts"
+LAYER_MODE_LOD = "layer_lod"
+
+from bpy.types import EnumPropertyItem
+ENUM_EMBED_MODE_NONE = (EMBED_MODE_NONE,'None', 'do not embed anything at all.')
+ENUM_EMBED_MODE_REFERENCE = (EMBED_MODE_REFERENCE,'Reference original data.','Instead of embedding all data just add the path to the file. This is faster than embed data, but you need to make shure the file never gets deleted,changed or moved.')
+ENUM_EMBED_MODE_DATA = (EMBED_MODE_DATA,'Embed original data.','Use this if you share the .blend file with others.')
+
+ENUM_LAYER_MODE_NONE = (LAYER_MODE_NONE,'None', '')
+ENUM_LAYER_MODE_PARTS = (LAYER_MODE_PARTS,'mesh parts','Try to move mesh parts evenly accross the layers')
+ENUM_LAYER_MODE_LOD = (LAYER_MODE_LOD,'lod-level','Try group mesh parts based on their lod-level evenly accross the layers')
+
 content=bytes("","UTF-8")
-bl_info = {
-    "name": "MHW Model importer",
-    "category": "Import-Export",
-    "author": "CrazyT",
-    "location": "File > Import"
-}
- 
+
  
 import base64
 import zlib 
@@ -17,11 +28,11 @@ import bmesh
 import os
 import configparser
 from bpy_extras.io_utils import ImportHelper
-from bpy.props import StringProperty, BoolProperty, EnumProperty
+from bpy.props import StringProperty, BoolProperty, EnumProperty, IntProperty
 from bpy.types import Operator
 from mathutils import Vector, Matrix, Euler
 from struct import unpack, pack
-from ..config import writeConfig,initConfig,setInstallPath,setChunkPath
+from ..config import writeConfig, initConfig, setInstallPath, setChunkPath
 from ..dbg import dbg
 
 x64=64
@@ -595,10 +606,11 @@ class ImportMOD3(Operator, ImportHelper):
             description="Path the contains the Scarlet directory.",
             default=PATH,
     )
-    use_layers = BoolProperty(
-            name="Use layers for mesh parts.",
-            description="If we find multiple mesh parts, try to move every mesh in a seperate layer.",
-            default=True,
+    use_layers = EnumProperty(
+            name="Layer mode",
+            description="Chose what mesh should be put to what layer.",
+            items=[ENUM_LAYER_MODE_NONE,ENUM_LAYER_MODE_PARTS,ENUM_LAYER_MODE_LOD],
+            default=LAYER_MODE_PARTS
     )
     import_textures = BoolProperty(
             name="Import textures.",
@@ -610,16 +622,18 @@ class ImportMOD3(Operator, ImportHelper):
             description="Skip meshparts with low level of detail.",
             default=True,
     )
-    embed_data = BoolProperty(
-            name="Embed original data.",
+    only_import_lod = IntProperty(
+            name="Only import LOD parts with level:",
+            description="If not -1 it imports only parts with a defined level of detail.",
+            default=-1,
+    )
+    embed_mode = EnumProperty(
+            name="Embed mode",
             description="Used for beeing able to export the object.",
-            default=False,
+            items=[ENUM_EMBED_MODE_NONE,ENUM_EMBED_MODE_REFERENCE,ENUM_EMBED_MODE_DATA],
+            default=EMBED_MODE_NONE
     )
-    reference_data = BoolProperty(
-            name="Reference original data.",
-            description="Instead of embedding all data just add the path to the file. This is faster than embed data, but you need to make shure the file never gets deleted,changed or moved.",
-            default=False,
-    )
+
 
     def init_main(self):
         self.headerref = self
@@ -631,7 +645,7 @@ class ImportMOD3(Operator, ImportHelper):
         fl = self.fl
         self.bendian = False
         self.ID = ReadLong(fl);
-        if self.ID!=0x444f4d:
+        if self.ID != 0x444f4d:
             raise Exception("Invalid Header")
         self.Version = ReadByte(fl)
         self.Version2 = ReadByte(fl) 
@@ -886,6 +900,8 @@ class ImportMOD3(Operator, ImportHelper):
     
     def execute(self, context):
         global content,CHUNK_PATH
+        self.embed_data = True if self.embed_mode == EMBED_MODE_DATA else False
+        self.reference_data = True if self.embed_mode == EMBED_MODE_REFERENCE else False
         self.init_main()
         CHUNK_PATH = self.chunk_path
         if CHUNK_PATH[len(CHUNK_PATH)-1] == '\\':
@@ -899,8 +915,8 @@ class ImportMOD3(Operator, ImportHelper):
         writeConfig()
         if(self.import_textures):
             self.parseMrl3(self.filepath.replace(".mod3",".mrl3"))
-        if(self.use_layers):
-            dbg("using layers")
+        if(self.use_layers != LAYER_MODE_NONE):
+            dbg("using layers %s" % self.use_layers)
         with open(self.filepath, 'rb') as content_file:
             fl = 0
             content = content_file.read()
@@ -936,12 +952,27 @@ class ImportMOD3(Operator, ImportHelper):
         
         fi = 0
         pi = 0
+        rpi = -1
+        lodlayers = {}
+        clod = 1
+        if(self.use_layers == LAYER_MODE_LOD):
+            for m in self.parts:
+                if not m.LOD in lodlayers:
+                    lodlayers[m.LOD] = clod
+                    clod += 1
         dbg("self.parts: %d" % len(self.parts))
         for m in self.parts:
-            if (self.only_import_lod_1) and (m.LOD!=1):
+            if ((self.only_import_lod < 0)and(self.only_import_lod_1)) and (m.LOD != 1):
+                dbg("Skipped mesh %d because of lod level: %d, expected: 1" % (pi,m.LOD))
+                pi += 1
+                continue
+            if (self.only_import_lod > -1) and (m.LOD != self.only_import_lod):
+                dbg("Skipped mesh %d because of lod level: %d , expected: %d" % (pi,m.LOD,self.only_import_lod))
                 pi += 1
                 continue
             if m.meshdata != None:
+                rpi += 1
+                dbg("Import mesh %d" % pi)
                 bm = bmesh.new()
                 my_id = bm.verts.layers.int.new('id')
                 bm.verts.ensure_lookup_table()
@@ -985,9 +1016,13 @@ class ImportMOD3(Operator, ImportHelper):
 
                 scene = bpy.context.scene
                 scene.objects.link(obj)  # put the object into the scene (link)
-                if(self.use_layers):
+                if(self.use_layers == LAYER_MODE_PARTS):
                     for i in range(19):
-                        obj.layers[1+i] = (i == (pi % 19)) # we only have 20 layers available ... sadly
+                        obj.layers[1+i] = (i == (rpi % 19)) # we only have 20 layers available ... sadly
+                if(self.use_layers == LAYER_MODE_LOD):
+                    for i in range(19):
+                        obj.layers[1+i] = (1+i == (lodlayers[m.LOD])) # we only have 20 layers available ... sadly
+                    
                 scene.objects.active = obj  # set as the active object in the scene
                 obj.select = True  # select object
 
@@ -997,6 +1032,8 @@ class ImportMOD3(Operator, ImportHelper):
                 # make the bmesh the object's mesh
                 bm.to_mesh(mesh)  
                 bm.free()  # always do this when finished
+            else:
+                dbg("Skipped mesh %d because of empty data" % pi)
 
             pi += 1
             #break

@@ -1,9 +1,4 @@
-bl_info = {
-    "name": "MHW Texture importer",
-    "category": "Import-Export",
-    "author": "CrazyT",
-    "location": "File > Import"
-}
+
 import configparser
 import bpy
 import bmesh

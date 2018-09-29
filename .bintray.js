@@ -8,13 +8,13 @@
     },
 
     "version": {
-        "name": "0.2"
+        "name": "0.3"
     },
 
     "files":
         [
             {
-                "includePattern": "/home/travis/build/TheCrazyT/BlenderMhwModelImporter/build/(.*)", "uploadPattern": "0.2/$1",
+                "includePattern": "/home/travis/build/TheCrazyT/BlenderMhwModelImporter/build/(.*)/(.*)", "uploadPattern": "$1/$2",
                 "matrixParams": {
                     "override": 1 
                 }
