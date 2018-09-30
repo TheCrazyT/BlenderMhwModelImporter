@@ -20,7 +20,7 @@ ENUM_LAYER_MODE_LOD = (LAYER_MODE_LOD,'lod-level','Try group mesh parts based on
 
 content=bytes("","UTF-8")
 
- 
+import mathutils 
 import base64
 import zlib 
 import bpy
@@ -43,6 +43,7 @@ class MODVertexBuffer818904dc:
     def __init__(self,headerref,vertexcount):
         dbg("MODVertexBuffer818904dc %d" % vertexcount)
         self.vertarray   = []
+        self.uvs         = []
         self.headerref   = headerref
         self.vertexcount = vertexcount
         for i in range(0,vertexcount):
@@ -55,8 +56,7 @@ class MODVertexBuffer818904dc:
             Read8s(headerref.fl)
             ReadByte(headerref.fl)
             ReadLong(headerref.fl)
-            ReadHalfFloat(headerref.fl)
-            ReadHalfFloat(headerref.fl)
+            self.uvs.append((ReadHalfFloat(headerref.fl),1-ReadHalfFloat(headerref.fl)))
             ReadLong(headerref.fl)
     @staticmethod
     def getSpaceAfterVert():
@@ -66,6 +66,7 @@ class MODVertexBufferf06033f:
     def __init__(self,headerref,vertexcount):
         dbg("MODVertexBufferf06033f %d" % vertexcount)
         self.vertarray   = []
+        self.uvs         = []
         self.headerref   = headerref
         self.vertexcount = vertexcount
         for i in range(0,vertexcount):
@@ -78,8 +79,7 @@ class MODVertexBufferf06033f:
             Read8s(headerref.fl)
             ReadByte(headerref.fl)
             ReadLong(headerref.fl)
-            ReadHalfFloat(headerref.fl)
-            ReadHalfFloat(headerref.fl)
+            self.uvs.append((ReadHalfFloat(headerref.fl),1-ReadHalfFloat(headerref.fl)))
             ReadLong(headerref.fl)
             ReadByte(headerref.fl)
             
@@ -94,6 +94,7 @@ class MODVertexBuffer81f58067:
     def __init__(self,headerref,vertexcount):
         dbg("MODVertexBuffer81f58067 %d" % vertexcount)
         self.vertarray   = []
+        self.uvs         = []
         self.headerref   = headerref
         self.vertexcount = vertexcount
         for i in range(0,vertexcount):
@@ -106,8 +107,7 @@ class MODVertexBuffer81f58067:
             Read8s(headerref.fl)
             ReadByte(headerref.fl)
             ReadLong(headerref.fl)
-            ReadHalfFloat(headerref.fl)
-            ReadHalfFloat(headerref.fl)
+            self.uvs.append((ReadHalfFloat(headerref.fl),1-ReadHalfFloat(headerref.fl)))
             ReadLong(headerref.fl)
             ReadByte(headerref.fl)
             ReadByte(headerref.fl)
@@ -130,6 +130,7 @@ class MODVertexBufferf471fe45:
         dbg("MODVertexBufferf471fe45 %d" % vertexcount)
         raise Exception("ToDo")
         self.vertarray   = []
+        self.uvs         = []
         self.headerref   = headerref
         self.vertexcount = vertexcount
         for i in range(0,vertexcount):
@@ -142,8 +143,7 @@ class MODVertexBufferf471fe45:
             Read8s(headerref.fl)
             ReadByte(headerref.fl)
             ReadLong(headerref.fl)
-            ReadHalfFloat(headerref.fl)
-            ReadHalfFloat(headerref.fl)
+            self.uvs.append((ReadHalfFloat(headerref.fl),1-ReadHalfFloat(headerref.fl)))
             ReadLong(headerref.fl)
     @staticmethod
     def getSpaceAfterVert():
@@ -152,6 +152,7 @@ class MODVertexBuffer3c730760:
     def __init__(self,headerref,vertexcount):
         dbg("MODVertexBuffer3c730760 %d" % vertexcount)
         self.vertarray   = []
+        self.uvs         = []
         self.headerref   = headerref
         self.vertexcount = vertexcount
         for i in range(0,vertexcount):
@@ -164,8 +165,7 @@ class MODVertexBuffer3c730760:
             Read8s(headerref.fl)
             ReadByte(headerref.fl)
             ReadLong(headerref.fl)
-            ReadHalfFloat(headerref.fl)
-            ReadHalfFloat(headerref.fl)
+            self.uvs.append((ReadHalfFloat(headerref.fl),1-ReadHalfFloat(headerref.fl)))
             ReadLong(headerref.fl)
             ReadByte(headerref.fl)
             
@@ -186,6 +186,7 @@ class MODVertexBufferb2fc0083:
         dbg("MODVertexBufferb2fc0083 %d" % vertexcount)
         raise Exception("ToDo")
         self.vertarray   = []
+        self.uvs         = []
         self.headerref   = headerref
         self.vertexcount = vertexcount
         for i in range(0,vertexcount):
@@ -198,8 +199,7 @@ class MODVertexBufferb2fc0083:
             Read8s(headerref.fl)
             ReadByte(headerref.fl)
             ReadLong(headerref.fl)
-            ReadHalfFloat(headerref.fl)
-            ReadHalfFloat(headerref.fl)
+            self.uvs.append((ReadHalfFloat(headerref.fl),1-ReadHalfFloat(headerref.fl)))
             ReadLong(headerref.fl)
     @staticmethod
     def getSpaceAfterVert():
@@ -208,6 +208,7 @@ class MODVertexBuffer366995a7:
     def __init__(self,headerref,vertexcount):
         dbg("MODVertexBuffer366995a7 %d" % vertexcount)
         self.vertarray   = []
+        self.uvs         = []
         self.headerref   = headerref
         self.vertexcount = vertexcount
         for i in range(0,vertexcount):
@@ -220,8 +221,7 @@ class MODVertexBuffer366995a7:
             Read8s(headerref.fl)
             ReadByte(headerref.fl)
             ReadLong(headerref.fl)
-            ReadHalfFloat(headerref.fl)
-            ReadHalfFloat(headerref.fl)
+            self.uvs.append((ReadHalfFloat(headerref.fl),1-ReadHalfFloat(headerref.fl)))
             ReadLong(headerref.fl)
             Read8s(headerref.fl)
             Read8s(headerref.fl)
@@ -238,6 +238,7 @@ class MODVertexBufferc9690ab8:
         dbg("MODVertexBufferc9690ab8 %d" % vertexcount)
         raise Exception("ToDo")
         self.vertarray   = []
+        self.uvs         = []
         self.headerref   = headerref
         self.vertexcount = vertexcount
         for i in range(0,vertexcount):
@@ -276,6 +277,7 @@ class MODVertexBuffer5e7f202d:
         dbg("MODVertexBuffer5e7f202d %d" % vertexcount)
         raise Exception("ToDo")
         self.vertarray   = []
+        self.uvs         = []
         self.headerref   = headerref
         self.vertexcount = vertexcount
         for i in range(0,vertexcount):
@@ -288,8 +290,7 @@ class MODVertexBuffer5e7f202d:
             Read8s(headerref.fl)
             ReadByte(headerref.fl)
             ReadLong(headerref.fl)
-            ReadHalfFloat(headerref.fl)
-            ReadHalfFloat(headerref.fl)
+            self.uvs.append((ReadHalfFloat(headerref.fl),1-ReadHalfFloat(headerref.fl)))
             ReadLong(headerref.fl)
     @staticmethod
     def getSpaceAfterVert():
@@ -298,6 +299,7 @@ class MODVertexBufferd829702c:
     def __init__(self,headerref,vertexcount):
         dbg("MODVertexBufferd829702c %d" % vertexcount)
         self.vertarray   = []
+        self.uvs         = []
         self.headerref   = headerref
         self.vertexcount = vertexcount
         for i in range(0,vertexcount):
@@ -310,8 +312,7 @@ class MODVertexBufferd829702c:
             Read8s(headerref.fl)
             ReadByte(headerref.fl)
             ReadLong(headerref.fl)
-            ReadHalfFloat(headerref.fl)
-            ReadHalfFloat(headerref.fl)
+            self.uvs.append((ReadHalfFloat(headerref.fl),1-ReadHalfFloat(headerref.fl)))
     @staticmethod
     def getSpaceAfterVert():
         return 1+1+1+1+4+2+2
@@ -319,6 +320,7 @@ class MODVertexBufferb8e69244:
     def __init__(self,headerref,vertexcount):
         dbg("MODVertexBufferd829702c %d" % vertexcount)
         self.vertarray   = []
+        self.uvs         = []
         self.headerref   = headerref
         self.vertexcount = vertexcount
         for i in range(0,vertexcount):
@@ -331,8 +333,7 @@ class MODVertexBufferb8e69244:
             Read8s(headerref.fl)
             ReadByte(headerref.fl)
             ReadLong(headerref.fl)
-            ReadHalfFloat(headerref.fl)
-            ReadHalfFloat(headerref.fl)
+            self.uvs.append((ReadHalfFloat(headerref.fl),1-ReadHalfFloat(headerref.fl)))
             ReadLong(headerref.fl)
             ReadByte(headerref.fl)
             ReadByte(headerref.fl)
@@ -381,13 +382,37 @@ def ReadBEShort(fl):
     res = unpack(">H",content[pos[fl]:pos[fl]+2])[0]
     pos[fl]+=2
     return res
-def _rdhf(v):
-    #TODO
-    pass
+def _rdhf(float16):
+		s = int((float16 >> 15) & 0x00000001)    # sign
+		e = int((float16 >> 10) & 0x0000001f)    # exponent
+		f = int(float16 & 0x000003ff)            # fraction
+
+		if e == 0:
+			if f == 0:
+				return int(s << 31)
+			else:
+				while not (f & 0x00000400):
+					f = f << 1
+					e -= 1
+				e += 1
+				f &= ~0x00000400
+				#print(s,e,f)
+		elif e == 31:
+			if f == 0:
+				return int((s << 31) | 0x7f800000)
+			else:
+				return int((s << 31) | 0x7f800000 | (f << 13))
+
+		e = e + (127 -15)
+		f = f << 13
+		return unpack('f',pack('I',int((s << 31) | (e << 23) | f)))[0]
 def Read8s(fl):
     return ReadByte(fl)*0.0078125
 def ReadHalfFloat(fl):
-    return _rdhf(ReadShort(fl))
+    s = ReadShort(fl)
+    res = _rdhf(s)
+    dbg("S: %08x R: %f" % (s,res))
+    return res
 def ReadFloat(fl):
     global pos,content
     res = unpack("f",content[pos[fl]:pos[fl]+4])[0]
@@ -900,6 +925,7 @@ class ImportMOD3(Operator, ImportHelper):
     
     def execute(self, context):
         global content,CHUNK_PATH
+        
         self.embed_data = True if self.embed_mode == EMBED_MODE_DATA else False
         self.reference_data = True if self.embed_mode == EMBED_MODE_REFERENCE else False
         self.init_main()
@@ -940,8 +966,20 @@ class ImportMOD3(Operator, ImportHelper):
                         dataText = bpy.data.texts.new('data')
                     dataText.from_string(data)
         self.startImport(fl,content)
+        if(self.import_textures):
+            area = next(area for area in bpy.context.screen.areas if area.type == 'VIEW_3D')
+            space = next(space for space in area.spaces if space.type == 'VIEW_3D')
+            space.viewport_shade = "TEXTURED"
+
         return {'FINISHED'}        
     def startImport(self,fl,content):
+        if not "shadeless" in bpy.data.materials:
+            shadeless = bpy.data.materials.new("Shadeless")
+        else:
+            shadeless = bpy.data.materials["Shadeless"]
+        shadeless.use_shadeless = True
+        shadeless.use_face_texture = True
+
         self.fl = fl
         Seek(fl,0)
             
@@ -983,6 +1021,8 @@ class ImportMOD3(Operator, ImportHelper):
                 verts  = []
                 verts2 = []
                 faces = []
+                face_vertex_index = {}
+                bmfaces = []
                 vi = 0
                 for v in m.meshdata.vertarray:
                     #dbg(v)
@@ -991,23 +1031,40 @@ class ImportMOD3(Operator, ImportHelper):
                     bmv[my_id] = vi
                     verts.append(bmv)
                     vi += 1
+                
+                if(self.import_textures):
+                    tex = bm.faces.layers.tex.new("main_uv_texture")
+                    uv = bm.loops.layers.uv.new("main_uv_layer")
+
+                fi = 0
                 for f in m.meshdata.facearray:
                     addFace=True
                     for x in f:
-                        if x>=len(verts):
+                        if x >= len(verts):
                             addFace = False
                             #dbg("%d not in verts [%d]" % (x,len(verts)))
                     if addFace:
                         #if fi<30:
                         vts  = [verts[x] for x in f]
                         vts2 = [verts2[x] for x in f]
+                        uvs  = [m.meshdata.uvs[x] for x in f]
                         #dbg(vts)
                         #dbg(vts2)
                         #dbg(f)
                         faces.append(vts)
                         fi+=1
                         try:
-                            f1 = bm.faces.new(vts)
+                            face = bm.faces.new(vts)
+                            vindices = [x for x in f]
+                            if(self.import_textures):
+                                face[tex].image = bpy.data.images[0]
+                                vi = 0
+                                for loopi in range(0,len(face.loops)):
+                                    loop = face.loops[loopi]
+                                    loop[uv].uv = uvs[vi]
+                                    vi += 1
+                            bmfaces.append(face)
+                            face_vertex_index[face] = vindices
                         except:
                             pass
                         #pass
@@ -1026,18 +1083,32 @@ class ImportMOD3(Operator, ImportHelper):
                 scene.objects.active = obj  # set as the active object in the scene
                 obj.select = True  # select object
 
-                mesh = bpy.context.object.data
-
-
                 # make the bmesh the object's mesh
                 bm.to_mesh(mesh)  
+                mesh.materials.append(shadeless)
+
+                #if(self.import_textures):
+                #    uv_texture = mesh.uv_textures.new(name="main_uv_texture")
+                #    dbg("UV_LAYERS: %d" % len(mesh.uv_layers.items()))
+                #    uv_layers = mesh.uv_layers
+                #    if len(uv_texture.data) == 0:
+                #        raise Exception("Unexpected uv_texture.data length.")
+                #    mesh.materials.append(shadeless)
+                #    vi = 0
+                #    for face_tex in uv_texture.data:
+                #        face_tex.image = bpy.data.images[0]
+                #        if vi < len(m.meshdata.uvs):
+                #            uvLoop = uv_layers[0].data
+                #            #dbg(uvLoop)
+                #            uvLoop[vi].uv = m.meshdata.uvs[vi]
+                #        vi += 1
+                    
                 bm.free()  # always do this when finished
             else:
                 dbg("Skipped mesh %d because of empty data" % pi)
 
             pi += 1
             #break
-
 
         
 # Only needed if you want to add into a dynamic menu

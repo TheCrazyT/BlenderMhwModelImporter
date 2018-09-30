@@ -1,6 +1,9 @@
 #Ported to blender from "MT Framework tools" https://www.dropbox.com/s/4ufvrgkdsioe3a6/MT%20Framework.mzp?dl=0 
 #(https://lukascone.wordpress.com/2017/06/18/mt-framework-tools/)
 
+from .dbg import dbg_init
+dbg_init()
+
 content=bytes("","UTF-8")
 bl_info = {
     "name": "MHW Model importer",

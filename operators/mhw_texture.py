@@ -38,8 +38,11 @@ def doImportTex(filePath):
             dbg("adding image %s" % imgPath)
             img = bpy.data.images.load(imgPath)
             material = bpy.data.materials.new("Mat%d" % i)
+            material.use_shadeless = True
+            material.use_face_texture = True
             imtex = bpy.data.textures.new('ImageTex%d' % i ,"IMAGE")
             slot = material.texture_slots.add()
+            imtex.image = img
             slot.texture = imtex
             i += 1
 
