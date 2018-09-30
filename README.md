@@ -3,24 +3,30 @@
 If you use texture.py, make shure to setup the Install-Path at the file-import dialog.
 
 
-27.09.2018:
+Quick install instructions:
 
-You can now import models with "Embed original data." property on import menu.
+ Extract the files and folders of the archive into a new folder and copy that folder to:
+ 
+  c:\Users\YOUR_USERNAME\AppData\Roaming\Blender Foundation\Blender\2.79\scripts\addons\
+  
+  (replace YOUR_USERNAME with your login name and 2.79 with your blender version)
+  
+  (Hint: type %APPDATA% in your explorer-window to get to your "Roaming"-directory)
+  
 
-This allows you to modify/move some vertices on it and export the same model with the modified data.(it actually only changes the vertice-section, keeping everything else as it is)
+30.09.2018:
 
+Started working on UV-Maps.
 
-28.09.2018:
+Currently it selects the first texture it finds, but the UV-map should stay the same if you switch the textures.
 
-Added "Reference original data." wich is faster (but if original file is deleted/moved the project can not be exported).
+To switch texture manually, your object should be in edit (TAB-Key) and face-select mode (cube-icon with highlighted front), hit "a" to select all then you can switch the texture in the UV-window.
 
-Refractored some redundant code (config).
+Before use check that the *.mrl3 needs to be in same folder and that the chunk path is currect!
 
-Added debug-module wich is has disabled debug output on release package (faster).
-
-Cleaned up/structorized code.
-
-
+Also fixed a bug that can happen if you import on an empty scene (doh!)
+  
+  
 29.09.2018:
 
 Added possibility to import objects with by their lod-level.
@@ -31,16 +37,28 @@ Added dropdowns for some options (instead of checkboxes) to make the selection a
 
 Added version number to the addon.
 
-
-Quick install instructions:
-
- Extract the files and folders of the archive into a new folder and copy that folder to:
- 
-  c:\Users\YOUR_USERNAME\AppData\Roaming\Blender Foundation\Blender\2.79\scripts\addons\
   
-  (replace YOUR_USERNAME with your login name and 2.79 with your blender version)
+28.09.2018:
+
+Added "Reference original data." wich is faster (but if original file is deleted/moved the project can not be exported).
+
+Refractored some redundant code (config).
+
+Added debug-module wich is has disabled debug output on release package (faster).
+
+Cleaned up/structorized code.
+
   
-  (Hint: type %APPDATA% in your explorer-window to get to your "Roaming"-directory)
+27.09.2018:
+
+You can now import models with "Embed original data." property on import menu.
+
+This allows you to modify/move some vertices on it and export the same model with the modified data.(it actually only changes the vertice-section, keeping everything else as it is)
+
+
+
+
+
 
   
 Screenshoots:
@@ -48,3 +66,5 @@ Screenshoots:
 ![screenshoot1](screenshoots/example.png)
 
 ![screenshoot2](screenshoots/example2.png)
+
+![screenshoot2](screenshoots/example3.png)
