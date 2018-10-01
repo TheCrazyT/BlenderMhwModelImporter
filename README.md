@@ -18,6 +18,13 @@ Quick install instructions:
   Make shure that "Import-Export: MHW Model Importer" in the user-preferences window under the section "add-ons" is checked.
   
 
+01.10.2018:
+
+Vertex-changes made to the UV-editor now get exported,too
+
+Changed default embed mode to "Reference"
+
+  
 30.09.2018:
 
 Started working on UV-Maps.
