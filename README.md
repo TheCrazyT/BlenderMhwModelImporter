@@ -1,7 +1,5 @@
 [ ![Download](https://api.bintray.com/packages/thecrazyt/BlenderMhwModelImporter/BlenderMhwModelImporter/images/download.svg) ](https://bintray.com/thecrazyt/BlenderMhwModelImporter/BlenderMhwModelImporter/_latestVersion)
  
-If you use texture.py, make shure to setup the Install-Path at the file-import dialog.
-
 
 Quick install instructions:
 
@@ -13,6 +11,11 @@ Quick install instructions:
   
   (Hint: type %APPDATA% in your explorer-window to get to your "Roaming"-directory)
   
+  ![install_folder1](screenshoots/install_folder1.png)
+
+  ![install_folder2](screenshoots/install_folder2.png)
+
+  
 
 30.09.2018:
 
@@ -22,7 +25,7 @@ Currently it selects the first texture it finds, but the UV-map should stay the 
 
 To switch texture manually, your object should be in edit (TAB-Key) and face-select mode (cube-icon with highlighted front), hit "a" to select all then you can switch the texture in the UV-window.
 
-Before use check that the *.mrl3 needs to be in same folder and that the chunk path is currect!
+Before use check that the *.mrl3 needs to be in same folder and that the chunk path is correct!
 
 Also fixed a bug that can happen if you import on an empty scene (doh!)
   
@@ -68,3 +71,7 @@ Screenshoots:
 ![screenshoot2](screenshoots/example2.png)
 
 ![screenshoot2](screenshoots/example3.png)
+
+![screenshoot2](screenshoots/example4.png)
+
+![screenshoot2](screenshoots/example5.png)

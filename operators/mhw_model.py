@@ -411,7 +411,7 @@ def Read8s(fl):
 def ReadHalfFloat(fl):
     s = ReadShort(fl)
     res = _rdhf(s)
-    dbg("S: %08x R: %f" % (s,res))
+    #dbg("S: %08x R: %f" % (s,res))
     return res
 def ReadFloat(fl):
     global pos,content
