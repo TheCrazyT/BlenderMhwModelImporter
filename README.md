@@ -14,7 +14,8 @@ Quick install instructions:
   ![install_folder1](screenshoots/install_folder1.png)
 
   ![install_folder2](screenshoots/install_folder2.png)
-
+  
+  Make shure that "Import-Export: MHW Model Importer" in the user-preferences window under the section "add-ons" is checked.
   
 
 30.09.2018:

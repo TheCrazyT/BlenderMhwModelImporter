@@ -20,6 +20,7 @@ ENUM_LAYER_MODE_LOD = (LAYER_MODE_LOD,'lod-level','Try group mesh parts based on
 
 content=bytes("","UTF-8")
 
+import binascii
 import mathutils 
 import base64
 import zlib 
@@ -61,6 +62,9 @@ class MODVertexBuffer818904dc:
     @staticmethod
     def getSpaceAfterVert():
         return 1+1+1+1+4+2+2+4
+    @staticmethod
+    def getUVOFFAfterVert():
+        return 1+1+1+1+4
 
 class MODVertexBufferf06033f:
     def __init__(self,headerref,vertexcount):
@@ -89,6 +93,9 @@ class MODVertexBufferf06033f:
     @staticmethod
     def getSpaceAfterVert():
         return 1+1+1+1+4+2+2+4+1+ 1+1+1
+    @staticmethod
+    def getUVOFFAfterVert():
+        return 1+1+1+1+4
 
 class MODVertexBuffer81f58067:
     def __init__(self,headerref,vertexcount):
@@ -125,6 +132,10 @@ class MODVertexBuffer81f58067:
     @staticmethod
     def getSpaceAfterVert():
         return 1+1+1+1+4+2+2+4+1+1+1+1+1 +1+1+1+1+1+1+1
+    @staticmethod
+    def getUVOFFAfterVert():
+        return 1+1+1+1+4
+
 class MODVertexBufferf471fe45:
     def __init__(self,headerref,vertexcount):
         dbg("MODVertexBufferf471fe45 %d" % vertexcount)
@@ -148,6 +159,10 @@ class MODVertexBufferf471fe45:
     @staticmethod
     def getSpaceAfterVert():
         return 1+1+1+1+4+2+2+4
+    @staticmethod
+    def getUVOFFAfterVert():
+        return 1+1+1+1+4
+
 class MODVertexBuffer3c730760:
     def __init__(self,headerref,vertexcount):
         dbg("MODVertexBuffer3c730760 %d" % vertexcount)
@@ -181,6 +196,11 @@ class MODVertexBuffer3c730760:
     @staticmethod
     def getSpaceAfterVert():
         return 1+1+1+1+4+2+2+4+1+1+1+1+1+1+1+1
+    @staticmethod
+    def getUVOFFAfterVert():
+        return 1+1+1+1+4
+        
+        
 class MODVertexBufferb2fc0083:
     def __init__(self,headerref,vertexcount):
         dbg("MODVertexBufferb2fc0083 %d" % vertexcount)
@@ -204,6 +224,10 @@ class MODVertexBufferb2fc0083:
     @staticmethod
     def getSpaceAfterVert():
         return 1+1+1+1+4+2+2+4
+    @staticmethod
+    def getUVOFFAfterVert():
+        return 1+1+1+1+4
+
 class MODVertexBuffer366995a7:
     def __init__(self,headerref,vertexcount):
         dbg("MODVertexBuffer366995a7 %d" % vertexcount)
@@ -233,6 +257,10 @@ class MODVertexBuffer366995a7:
     @staticmethod
     def getSpaceAfterVert():
         return 1+1+1+1+4+2+2+4+1+1+1+1 + 8+4
+    @staticmethod
+    def getUVOFFAfterVert():
+        return 1+1+1+1+4
+
 class MODVertexBufferc9690ab8:
     def __init__(self,headerref,vertexcount):
         dbg("MODVertexBufferc9690ab8 %d" % vertexcount)
@@ -271,6 +299,9 @@ class MODVertexBufferc9690ab8:
     @staticmethod
     def getSpaceAfterVert():
         return 1+1+1+1+4+2+2+2+2+1+1+1+1 +1+1+1+1+1+1+1+1
+    @staticmethod
+    def getUVOFFAfterVert():
+        return 1+1+1+1+4
 
 class MODVertexBuffer5e7f202d:
     def __init__(self,headerref,vertexcount):
@@ -295,6 +326,10 @@ class MODVertexBuffer5e7f202d:
     @staticmethod
     def getSpaceAfterVert():
         return 1+1+1+1+4+2+2+4
+    @staticmethod
+    def getUVOFFAfterVert():
+        return 1+1+1+1+4
+        
 class MODVertexBufferd829702c:
     def __init__(self,headerref,vertexcount):
         dbg("MODVertexBufferd829702c %d" % vertexcount)
@@ -316,6 +351,10 @@ class MODVertexBufferd829702c:
     @staticmethod
     def getSpaceAfterVert():
         return 1+1+1+1+4+2+2
+    @staticmethod
+    def getUVOFFAfterVert():
+        return 1+1+1+1+4
+
 class MODVertexBufferb8e69244:
     def __init__(self,headerref,vertexcount):
         dbg("MODVertexBufferd829702c %d" % vertexcount)
@@ -351,6 +390,10 @@ class MODVertexBufferb8e69244:
     @staticmethod
     def getSpaceAfterVert():
         return 1+1+1+1+4+2+2+4+1+1+1+1+1*9+4 +1+1+1+1
+    @staticmethod
+    def getUVOFFAfterVert():
+        return 1+1+1+1+4
+
 MODVertexBuffera5104ca0 = MODVertexBuffer5e7f202d
 MODVertexBufferf637401c = MODVertexBufferf06033f
 MODVertexBuffera756f2f9 = MODVertexBufferd829702c
@@ -382,6 +425,38 @@ def ReadBEShort(fl):
     res = unpack(">H",content[pos[fl]:pos[fl]+2])[0]
     pos[fl]+=2
     return res
+    
+#copied this code from http://davidejones.com/blog/1413-python-precision-floating-point/
+def _wrhf(float32):
+    F16_EXPONENT_BITS = 0x1F
+    F16_EXPONENT_SHIFT = 10
+    F16_EXPONENT_BIAS = 15
+    F16_MANTISSA_BITS = 0x3ff
+    F16_MANTISSA_SHIFT =  (23 - F16_EXPONENT_SHIFT)
+    F16_MAX_EXPONENT =  (F16_EXPONENT_BITS << F16_EXPONENT_SHIFT)
+
+    a = pack('>f',float32)
+    b = binascii.hexlify(a)
+
+    f32 = int(b,16)
+    f16 = 0
+    sign = (f32 >> 16) & 0x8000
+    exponent = ((f32 >> 23) & 0xff) - 127
+    mantissa = f32 & 0x007fffff
+            
+    if exponent == 128:
+        f16 = sign | F16_MAX_EXPONENT
+        if mantissa:
+            f16 |= (mantissa & F16_MANTISSA_BITS)
+    elif exponent > 15:
+        f16 = sign | F16_MAX_EXPONENT
+    elif exponent > -15:
+        exponent += F16_EXPONENT_BIAS
+        mantissa >>= F16_MANTISSA_SHIFT
+        f16 = sign | exponent << F16_EXPONENT_SHIFT | mantissa
+    else:
+        f16 = sign
+    return f16
 def _rdhf(float16):
 		s = int((float16 >> 15) & 0x00000001)    # sign
 		e = int((float16 >> 10) & 0x0000001f)    # exponent
@@ -406,6 +481,7 @@ def _rdhf(float16):
 		e = e + (127 -15)
 		f = f << 13
 		return unpack('f',pack('I',int((s << 31) | (e << 23) | f)))[0]
+
 def Read8s(fl):
     return ReadByte(fl)*0.0078125
 def ReadHalfFloat(fl):
@@ -435,6 +511,17 @@ def ReadVector3(fl):
     res = unpack("fff",content[pos[fl]:pos[fl]+4*3])
     pos[fl]+=4*3
     return res
+
+def WriteHalfFloats(fl,floats32):
+    global pos,content
+    p = b''
+    for f in floats32:
+        f16 = _wrhf(f)
+        p += pack("<H",f16)
+    c1 = content[0:pos[fl]]
+    c2 = content[pos[fl]+2*len(floats32):]
+    pos[fl] += 2*len(floats32)
+    content = c1 + p + c2
     
 def WriteFloats(fl,floats):
     global pos,content
@@ -443,7 +530,6 @@ def WriteFloats(fl,floats):
         raise Exception("Invalid write position")
     p = pack("%df" % len(floats),*floats)
     c1 = content[0:pos[fl]]
-    #dbg(p)
     c2 = content[pos[fl]+len(floats)*4:]
     pos[fl]+=len(floats)*4
     content = c1 + p + c2
@@ -567,10 +653,23 @@ class MeshPart:
         verts2 = sorted(bm.vertices, key=lambda v: my_id.data[v.index].value)
         verts = [vert.co for vert in verts2]
         
+        uvs = {}
+        if len(bm.uv_layers)>0:
+            vertIdxMap = {}
+            i1 = 0
+            for i2 in [vert.index for vert in verts2]:
+                vertIdxMap[i2] = i1
+                i1 += 1
+            
+            for p in bm.polygons:
+                for loop in p.loop_indices:
+                    uvs[vertIdxMap[bm.loops[loop].vertex_index]] = bm.uv_layers[0].data[loop].uv
+                
+        
         BOFF=self.VertexSub+self.FaceAdd
         dbg("self.VertexOffset %08x" % (headerref.VertexOffset+self.VertexOffset+self.BlockSize*BOFF))
         Seek(fl, (headerref.VertexOffset+self.VertexOffset+self.BlockSize*BOFF))
-        self.writemeshdataF(self,fl,verts)
+        self.writemeshdataF(self,fl,verts,uvs)
     def getName(self):
         return "MyObject.%05d.%08x" % (self.uid,self.BlockType)
 
@@ -590,6 +689,11 @@ class ExportMOD3(Operator, ImportHelper):
         global content,pos
         if not 'data' in bpy.data.texts:
             raise Exception("Make shure to import with \"Reference/Embed original data.\" first.")
+        scene = bpy.context.scene
+        for obj in scene.objects:
+            if obj.type == 'MESH':
+                scene.objects.active = obj
+                bpy.ops.object.mode_set(mode='OBJECT')
         dataText = bpy.data.texts['data'].lines[0].body
         if dataText[0:5]=="path:":
             path = dataText[5:]
@@ -656,7 +760,7 @@ class ImportMOD3(Operator, ImportHelper):
             name="Embed mode",
             description="Used for beeing able to export the object.",
             items=[ENUM_EMBED_MODE_NONE,ENUM_EMBED_MODE_REFERENCE,ENUM_EMBED_MODE_DATA],
-            default=EMBED_MODE_NONE
+            default=EMBED_MODE_REFERENCE
     )
 
 
@@ -716,14 +820,15 @@ class ImportMOD3(Operator, ImportHelper):
         Seek(fl,self.BonesOffset)
     
     
-    def writemeshdatav1(self,meshPart,fl,vertices):
+    def writemeshdatav1(self,meshPart,fl,vertices,uvs):
         raise Exception("NotImplementedError")
-    def writemeshdatav2(self,meshPart,fl,vertices):
+    def writemeshdatav2(self,meshPart,fl,vertices,uvs):
         raise Exception("NotImplementedError")
-    def writemeshdatav3(self,meshPart,fl,vertices):
+    def writemeshdatav3(self,meshPart,fl,vertices,uvs):
         dbg("writemeshdatav3 %s meshPart.VertexCount: %d , vertices: %d" % (meshPart.getName(),meshPart.VertexCount,len(vertices)))
         if meshPart.VertexCount != len(vertices):
             raise Exception("different vertices counts are not (yet) permitted!")
+        uvi = 0
         for v3 in vertices:
             vl=[]
             for v in v3:
@@ -731,15 +836,24 @@ class ImportMOD3(Operator, ImportHelper):
             if(len(vl) != 3):
                 raise Exception("verticesCount != 3")
             WriteFloats(fl,vl)
-            fseek(fl,eval("MODVertexBuffer%08x" % meshPart.BlockType).getSpaceAfterVert())
+            vertexBuffer = eval("MODVertexBuffer%08x" % meshPart.BlockType)
+            spaceAfterVert = vertexBuffer.getSpaceAfterVert()
+            uvOFF = vertexBuffer.getUVOFFAfterVert()
+            fseek(fl,uvOFF)
+            if len(uvs)>0:
+                WriteHalfFloats(fl,[uvs[uvi].x,1-uvs[uvi].y])
+                uvi += 1
+            else:
+                fseek(fl,4)
+            fseek(fl,spaceAfterVert-uvOFF-4)
         
     def loadmeshdatav1(self,meshPart):
         f = eval("MODVertexBuffer%08x" % meshPart.BlockType)
         headerref = meshPart.headerref
         if f != None:
-            Seek(headerref.fl,((headerref.VertexOffset+meshPart.VertexOffset)+(BlockSize*(meshPart.VertexSub+meshPart.FaceAdd)))) #seek_set
+            Seek(headerref.fl,((headerref.VertexOffset+meshPart.VertexOffset)+(BlockSize*(meshPart.VertexSub+meshPart.FaceAdd))))
             meshPart.meshdata = f(headerref,meshPart.VertexCount)
-            Seek(headerref.fl,(headerref.FacesOffset+FaceOffset*2)) #seek_set
+            Seek(headerref.fl,(headerref.FacesOffset+FaceOffset*2))
             if headerref.bendian:
                 meshPart.meshdata.facearray = CollectBEStrips(headerref.fl,meshPart.FaceCount,(0-meshPart.VertexSub))
             else:
@@ -754,9 +868,9 @@ class ImportMOD3(Operator, ImportHelper):
         if f != None:
             VOFF=headerref.VertexOffset+meshPart.VertexOffset
             BOFF=meshPart.VertexSub+meshPart.FaceAdd
-            Seek(headerref.fl,(VOFF+meshPart.BlockSize*BOFF)) #seek_set
+            Seek(headerref.fl,(VOFF+meshPart.BlockSize*BOFF))
             meshPart.meshdata = f(headerref,meshPart.VertexCount)
-            Seek(headerref.fl,(headerref.FacesOffset+meshPart.FaceOffset*2)) #seek_set
+            Seek(headerref.fl,(headerref.FacesOffset+meshPart.FaceOffset*2))
             meshPart.FaceCount = int(meshPart.FaceCount/3)
             if headerref.bendian:
                 meshPart.meshdata.facearray = CollectBETris(headerref.fl,meshPart.FaceCount,0-meshPart.VertexSub)
@@ -770,44 +884,44 @@ class ImportMOD3(Operator, ImportHelper):
             fl = self.fl
             id = ReadBEShort(fl)
             Material = ReadBEShort(fl )
-            ReadByte(fl) #unsigned
-            LOD = ReadByte(fl) #unsigned
+            ReadByte(fl)
+            LOD = ReadByte(fl)
             readshort(fl)
-            BlockSize = ReadByte(fl) #unsigned
-            BlockType = ReadByte(fl) #unsigned
-            fseek(fl,2) #seek_cur
+            BlockSize = ReadByte(fl)
+            BlockType = ReadByte(fl)
+            fseek(fl,2)
             VertexCount = ReadBEShort(fl) 
             ReadShort(fl)
             VertexSub = ReadBELong(fl)
             VertexOffset = ReadBELong(fl) 
-            fseek(fl,4) #seek_cur
+            fseek(fl,4)
             FaceOffset = ReadBELong(fl)
             FaceCount = ReadBELong(fl)
             FaceAdd = ReadBELong(fl)
-            fseek(fl,6) #seek_cur
+            fseek(fl,6)
             boneremapid = ReadByte(fl)+1
-            fseek(fl,5) #seek_cur
+            fseek(fl,5)
         else:
             fl = self.fl
             id = ReadShort(fl)
             Material = ReadShort(fl )
-            ReadByte(fl) #unsigned
-            LOD = ReadByte(fl) #unsigned
+            ReadByte(fl)
+            LOD = ReadByte(fl)
             readshort(fl)
-            BlockSize = ReadByte(fl) #unsigned
-            BlockType = ReadByte(fl) #unsigned
-            fseek(fl,2) #seek_cur
+            BlockSize = ReadByte(fl)
+            BlockType = ReadByte(fl)
+            fseek(fl,2)
             VertexCount = ReadShort(fl) 
             ReadShort(fl)
             VertexSub = ReadLong(fl)
             VertexOffset = ReadLong(fl) 
-            fseek(fl,4) #seek_cur
+            fseek(fl,4)
             FaceOffset = ReadLong(fl) 
             FaceCount = ReadLong(fl)
             FaceAdd = ReadLong(fl) 
-            fseek(fl,6) #seek_cur
+            fseek(fl,6)
             boneremapid = ReadByte(fl)+1
-            fseek(fl,5) #seek_cur
+            fseek(fl,5)
         return MeshPart(uid,
             id,
             Material,
@@ -846,7 +960,7 @@ class ImportMOD3(Operator, ImportHelper):
         FaceCount = ReadLong(headerref.fl)
         FaceAdd = ReadLong(headerref.fl)
         boneremapid = ReadByte(headerref.fl)+1
-        fseek(headerref.fl,39) #seek_cur
+        fseek(headerref.fl,39)
         return MeshPart(uid,
             id,
             None,
