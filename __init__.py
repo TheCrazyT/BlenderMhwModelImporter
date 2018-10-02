@@ -2,6 +2,7 @@
 #(https://lukascone.wordpress.com/2017/06/18/mt-framework-tools/)
 
 from .dbg import dbg_init
+
 dbg_init()
 
 content=bytes("","UTF-8")
@@ -17,6 +18,7 @@ bl_info = {
 import base64
 import zlib 
 import bpy
+
 from .operators.mhw_model import ImportMOD3
 from .operators.mhw_model import menu_func_import as mhw_model_menu_func_import
 from .operators.mhw_model import menu_func_export as mhw_model_menu_func_export

@@ -139,9 +139,9 @@ class MODVertexBuffer81f58067:
 class MODVertexBufferf471fe45:
     def __init__(self,headerref,vertexcount):
         dbg("MODVertexBufferf471fe45 %d" % vertexcount)
-        raise Exception("ToDo")
         self.vertarray   = []
         self.uvs         = []
+        self.uvs2        = []
         self.headerref   = headerref
         self.vertexcount = vertexcount
         for i in range(0,vertexcount):
@@ -155,7 +155,12 @@ class MODVertexBufferf471fe45:
             ReadByte(headerref.fl)
             ReadLong(headerref.fl)
             self.uvs.append((ReadHalfFloat(headerref.fl),1-ReadHalfFloat(headerref.fl)))
+            self.uvs2.append((ReadHalfFloat(headerref.fl),1-ReadHalfFloat(headerref.fl)))
             ReadLong(headerref.fl)
+            ReadByte(headerref.fl)
+            ReadByte(headerref.fl)
+            ReadByte(headerref.fl)
+            ReadByte(headerref.fl)
     @staticmethod
     def getSpaceAfterVert():
         return 1+1+1+1+4+2+2+4
@@ -522,7 +527,6 @@ def WriteHalfFloats(fl,floats32):
     c2 = content[pos[fl]+2*len(floats32):]
     pos[fl] += 2*len(floats32)
     content = c1 + p + c2
-    
 def WriteFloats(fl,floats):
     global pos,content
     dbg("WriteFloats at 0x%08x %s" % (pos[fl],floats))
@@ -531,7 +535,27 @@ def WriteFloats(fl,floats):
     p = pack("%df" % len(floats),*floats)
     c1 = content[0:pos[fl]]
     c2 = content[pos[fl]+len(floats)*4:]
-    pos[fl]+=len(floats)*4
+    pos[fl] += len(floats)*4
+    content = c1 + p + c2
+def WriteBytes(fl,bytes):
+    global pos,content
+    dbg("WriteBytes at 0x%08x %s" % (pos[fl],bytes))
+    if pos[fl]==0:
+        raise Exception("Invalid write position")
+    p = pack("%dB" % len(bytes),*bytes)
+    c1 = content[0:pos[fl]]
+    c2 = content[pos[fl]+len(bytes):]
+    pos[fl] += len(bytes)
+    content = c1 + p + c2
+def WriteLongs(fl,longs):
+    global pos,content
+    dbg("WriteLongs at 0x%08x %s" % (pos[fl],longs))
+    if pos[fl]==0:
+        raise Exception("Invalid write position")
+    p = pack("%dL" % len(longs),*longs)
+    c1 = content[0:pos[fl]]
+    c2 = content[pos[fl]+len(longs)*4:]
+    pos[fl] += len(longs)*4
     content = c1 + p + c2
 def getPos(fl):
     return pos[fl]
@@ -604,6 +628,7 @@ def fseek(fl,roffset):
     
 class MeshPart:
     def __init__(self,
+            MeshPartOffset,
             uid,
             id,
             Material,
@@ -621,6 +646,7 @@ class MeshPart:
             headerref,
             loadmeshdata,
             writemeshdata):
+            self.MeshPartOffset = MeshPartOffset
             self.uid = uid
             self.id = id
             self.Material = Material
@@ -640,6 +666,22 @@ class MeshPart:
             self.writemeshdataF = writemeshdata
     def loadmeshdata(self):
         self.loadmeshdataF(self)
+    def writeCustomProperties(self,fl):
+        dbg("writeCustomProperties")
+        headerref = self.headerref
+        n = self.getName()
+        if not n in bpy.data.objects:
+            dbg("Mesh %s not found!" % n)
+            return
+        obj = bpy.data.objects[n]
+        bm = obj.data
+        if "LOD" in bm:
+            self.writeLOD(fl,bm["LOD"])
+    def writeLOD(self,fl,lod):
+        Seek(fl,self.MeshPartOffset+self.getLODOffset())
+        WriteLongs(fl,[lod])
+    def getLODOffset(self):
+        return 8
     def writeVertexes(self,fl):
         dbg("writeVertexes uid:%d" % self.uid)
         headerref = self.headerref
@@ -711,6 +753,7 @@ class ExportMOD3(Operator, ImportHelper):
         i.readMeshParts()
         for p in i.parts:
             p.writeVertexes(i.fl)
+            p.writeCustomProperties(i.fl)
         with open(self.filepath, 'wb') as content_file:
             content_file.write(content)
         return {'FINISHED'}
@@ -880,6 +923,7 @@ class ImportMOD3(Operator, ImportHelper):
             raise Exception("Unknown block hash [%08x] for MTF v1 model format.\n" % meshPart.BlockType)
 
     def readMeshPartv1(self,uid):
+        MeshPartOffset = getPos(self.fl)
         if self.bendian:
             fl = self.fl
             id = ReadBEShort(fl)
@@ -922,7 +966,9 @@ class ImportMOD3(Operator, ImportHelper):
             fseek(fl,6)
             boneremapid = ReadByte(fl)+1
             fseek(fl,5)
-        return MeshPart(uid,
+        return MeshPart(
+            MeshPartOffset,
+            uid,
             id,
             Material,
             LOD,
@@ -945,6 +991,7 @@ class ImportMOD3(Operator, ImportHelper):
         raise Exception("readMeshPartv2 not implemented")
     def readMeshPartv3(self,uid):
         headerref = self.headerref
+        MeshPartOffset = getPos(headerref.fl)
         ReadShort(headerref.fl)
         VertexCount = ReadShort(headerref.fl)     
         id = ReadShort(headerref.fl)
@@ -961,7 +1008,9 @@ class ImportMOD3(Operator, ImportHelper):
         FaceAdd = ReadLong(headerref.fl)
         boneremapid = ReadByte(headerref.fl)+1
         fseek(headerref.fl,39)
-        return MeshPart(uid,
+        return MeshPart(
+            MeshPartOffset,
+            uid,
             id,
             None,
             lod,
@@ -1200,6 +1249,7 @@ class ImportMOD3(Operator, ImportHelper):
                 # make the bmesh the object's mesh
                 bm.to_mesh(mesh)  
                 mesh.materials.append(shadeless)
+                mesh["LOD"] = m.LOD
 
                 #if(self.import_textures):
                 #    uv_texture = mesh.uv_textures.new(name="main_uv_texture")

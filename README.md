@@ -18,6 +18,15 @@ Quick install instructions:
   Make shure that "Import-Export: MHW Model Importer" in the user-preferences window under the section "add-ons" is checked.
   
 
+02.10.2018:
+
+Added a custom launcher "start.bat" for people with problems on install.
+
+Fixed problem that happens on import of em027_00.mod3. (attention, its a big object, you might need to adjust clippings: N-Key on blender in 3d-view)
+
+Added LOD as custom property for objects. (see: screenshoots/custom_prop.png)
+
+
 01.10.2018:
 
 Vertex-changes made to the UV-editor now get exported,too
