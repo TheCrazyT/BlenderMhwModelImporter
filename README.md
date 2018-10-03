@@ -22,7 +22,7 @@ Quick install instructions:
   
 Started working on weights.
 
-Sadly there are so many different mesh types that only some of them are currently supported. ( [example here](../blob/master/LICENSE) )
+Sadly there are so many different mesh types that only some of them are currently supported. ( [example here](./screenshoots/example6.png) )
 
 
 02.10.2018:
