@@ -16,7 +16,14 @@ Quick install instructions:
   ![install_folder2](screenshoots/install_folder2.png)
   
   Make shure that "Import-Export: MHW Model Importer" in the user-preferences window under the section "add-ons" is checked.
+
+
+03.10.2018:
   
+Started working on weights.
+
+Sadly there are so many different mesh types that only some of them are currently supported. ( [example here](../blob/master/LICENSE) )
+
 
 02.10.2018:
 

@@ -40,11 +40,50 @@ x64=64
 
 (config,CHUNK_PATH,PATH) = initConfig()
 
+WEIGHT_MULTIPLIER = 0.000977517
+BIT_LENGTH_10 = 0x3ff
+def proxima(value1,value2=0,epsilon=0.0001):
+    return (value1 <= (value2+epsilon)) and (value1 >= (value2-epsilon))
+
+
+def calcBonesAndWeightsArr(cnt,weights,bones):
+    weightArrResult = []
+    boneArrResult = []
+    cwt = []
+    cbn = []
+    for b in range(0,cnt):
+        if (weights[b]>0) and not proxima(weights[b]):
+            try:
+                fitem = cbn.index(bones[b])
+            except:
+                fitem = -1
+            if fitem > -1:
+                cwt[fitem] += weights[b]
+            else:
+                cbn.append(bones[b])
+                cwt.append(weights[b])
+    return (cwt,cbn)
+
+def calcBonesAndWeights(cnt,weightVal,bns):
+    global WEIGHT_MULTIPLIER
+    wt = []
+    wt.append((weightVal & BIT_LENGTH_10)*WEIGHT_MULTIPLIER)
+    wt.append(((weightVal>>10) & BIT_LENGTH_10)*WEIGHT_MULTIPLIER)
+    wt.append(((weightVal>>20) & BIT_LENGTH_10)*WEIGHT_MULTIPLIER)
+    wt.append(1 - wt[0] - wt[1] - wt[2])
+    return calcBonesAndWeightsArr(cnt,wt,bns)
+
+
+    
+################################################################ Vertex Buffers
+# TODO: move this shit to separate file
 class MODVertexBuffer818904dc:
     def __init__(self,headerref,vertexcount):
         dbg("MODVertexBuffer818904dc %d" % vertexcount)
         self.vertarray   = []
         self.uvs         = []
+        self.weights     = []
+        self.bones       = []
         self.headerref   = headerref
         self.vertexcount = vertexcount
         for i in range(0,vertexcount):
@@ -60,17 +99,25 @@ class MODVertexBuffer818904dc:
             self.uvs.append((ReadHalfFloat(headerref.fl),1-ReadHalfFloat(headerref.fl)))
             ReadLong(headerref.fl)
     @staticmethod
-    def getSpaceAfterVert():
-        return 1+1+1+1+4+2+2+4
+    def getStructSize():
+        return 4+4+4+1+1+1+1+4+2+2+4
     @staticmethod
     def getUVOFFAfterVert():
         return 1+1+1+1+4
+    @staticmethod
+    def getWeightsOFFAfterUVOFF():
+        return -1
+    @staticmethod
+    def getBonesOFFAfterWeightsOFF():
+        return -1
 
 class MODVertexBufferf06033f:
     def __init__(self,headerref,vertexcount):
         dbg("MODVertexBufferf06033f %d" % vertexcount)
         self.vertarray   = []
         self.uvs         = []
+        self.weights     = []
+        self.bones       = []
         self.headerref   = headerref
         self.vertexcount = vertexcount
         for i in range(0,vertexcount):
@@ -84,24 +131,31 @@ class MODVertexBufferf06033f:
             ReadByte(headerref.fl)
             ReadLong(headerref.fl)
             self.uvs.append((ReadHalfFloat(headerref.fl),1-ReadHalfFloat(headerref.fl)))
-            ReadLong(headerref.fl)
-            ReadByte(headerref.fl)
-            
-            ReadByte(headerref.fl)
-            ReadByte(headerref.fl)
-            ReadByte(headerref.fl)
+            wts = ReadLong(headerref.fl)
+            bns = [ReadByte(headerref.fl),ReadByte(headerref.fl),ReadByte(headerref.fl),ReadByte(headerref.fl)]
+            [weights,bones] = calcBonesAndWeights(4,wts,bns)
+            self.weights.append(weights)
+            self.bones.append(bones)
     @staticmethod
-    def getSpaceAfterVert():
-        return 1+1+1+1+4+2+2+4+1+ 1+1+1
+    def getStructSize():
+        return 4+4+4+1+1+1+1+4+2+2+4+1+ 1+1+1
     @staticmethod
     def getUVOFFAfterVert():
         return 1+1+1+1+4
-
+    @staticmethod
+    def getWeightsOFFAfterUVOFF():
+        return 0
+    @staticmethod
+    def getBonesOFFAfterWeightsOFF():
+        return 0
+        
 class MODVertexBuffer81f58067:
     def __init__(self,headerref,vertexcount):
         dbg("MODVertexBuffer81f58067 %d" % vertexcount)
         self.vertarray   = []
         self.uvs         = []
+        self.weights     = []
+        self.bones       = []
         self.headerref   = headerref
         self.vertexcount = vertexcount
         for i in range(0,vertexcount):
@@ -130,18 +184,26 @@ class MODVertexBuffer81f58067:
             ReadByte(headerref.fl)
             ReadByte(headerref.fl)
     @staticmethod
-    def getSpaceAfterVert():
-        return 1+1+1+1+4+2+2+4+1+1+1+1+1 +1+1+1+1+1+1+1
+    def getStructSize():
+        return 4+4+4+1+1+1+1+4+2+2+4+1+1+1+1+1 +1+1+1+1+1+1+1
     @staticmethod
     def getUVOFFAfterVert():
         return 1+1+1+1+4
-
+    @staticmethod
+    def getWeightsOFFAfterUVOFF():
+        return -1
+    @staticmethod
+    def getBonesOFFAfterWeightsOFF():
+        return -1
+        
 class MODVertexBufferf471fe45:
     def __init__(self,headerref,vertexcount):
         dbg("MODVertexBufferf471fe45 %d" % vertexcount)
         self.vertarray   = []
         self.uvs         = []
         self.uvs2        = []
+        self.weights     = []
+        self.bones       = []
         self.headerref   = headerref
         self.vertexcount = vertexcount
         for i in range(0,vertexcount):
@@ -156,23 +218,31 @@ class MODVertexBufferf471fe45:
             ReadLong(headerref.fl)
             self.uvs.append((ReadHalfFloat(headerref.fl),1-ReadHalfFloat(headerref.fl)))
             self.uvs2.append((ReadHalfFloat(headerref.fl),1-ReadHalfFloat(headerref.fl)))
-            ReadLong(headerref.fl)
-            ReadByte(headerref.fl)
-            ReadByte(headerref.fl)
-            ReadByte(headerref.fl)
-            ReadByte(headerref.fl)
+            wts = ReadLong(headerref.fl)
+            bns = [ReadByte(headerref.fl),ReadByte(headerref.fl),ReadByte(headerref.fl),ReadByte(headerref.fl)]
+            [weights,bones] = calcBonesAndWeights(4,wts,bns)
+            self.weights.append(weights)
+            self.bones.append(bones)
     @staticmethod
-    def getSpaceAfterVert():
-        return 1+1+1+1+4+2+2+4
+    def getStructSize():
+        return 4+4+4+1+1+1+1+4+2+2+4
     @staticmethod
     def getUVOFFAfterVert():
         return 1+1+1+1+4
-
+    @staticmethod
+    def getWeightsOFFAfterUVOFF():
+        return 0
+    @staticmethod
+    def getBonesOFFAfterWeightsOFF():
+        return 0
+        
 class MODVertexBuffer3c730760:
     def __init__(self,headerref,vertexcount):
         dbg("MODVertexBuffer3c730760 %d" % vertexcount)
         self.vertarray   = []
         self.uvs         = []
+        self.weights     = []
+        self.bones       = []
         self.headerref   = headerref
         self.vertexcount = vertexcount
         for i in range(0,vertexcount):
@@ -186,12 +256,11 @@ class MODVertexBuffer3c730760:
             ReadByte(headerref.fl)
             ReadLong(headerref.fl)
             self.uvs.append((ReadHalfFloat(headerref.fl),1-ReadHalfFloat(headerref.fl)))
-            ReadLong(headerref.fl)
-            ReadByte(headerref.fl)
-            
-            ReadByte(headerref.fl)
-            ReadByte(headerref.fl)
-            ReadByte(headerref.fl)
+            wts = ReadLong(headerref.fl)
+            bns = [ReadByte(headerref.fl),ReadByte(headerref.fl),ReadByte(headerref.fl),ReadByte(headerref.fl)]
+            [weights,bones] = calcBonesAndWeights(4,wts,bns)
+            self.weights.append(weights)
+            self.bones.append(bones)
             
             ReadByte(headerref.fl)
             
@@ -199,12 +268,17 @@ class MODVertexBuffer3c730760:
             ReadByte(headerref.fl)
             ReadByte(headerref.fl)
     @staticmethod
-    def getSpaceAfterVert():
-        return 1+1+1+1+4+2+2+4+1+1+1+1+1+1+1+1
+    def getStructSize():
+        return 4+4+4+1+1+1+1+4+2+2+4+1+1+1+1+1+1+1+1
     @staticmethod
     def getUVOFFAfterVert():
         return 1+1+1+1+4
-        
+    @staticmethod
+    def getWeightsOFFAfterUVOFF():
+        return 0
+    @staticmethod
+    def getBonesOFFAfterWeightsOFF():
+        return 0      
         
 class MODVertexBufferb2fc0083:
     def __init__(self,headerref,vertexcount):
@@ -212,6 +286,8 @@ class MODVertexBufferb2fc0083:
         raise Exception("ToDo")
         self.vertarray   = []
         self.uvs         = []
+        self.weights     = []
+        self.bones       = []
         self.headerref   = headerref
         self.vertexcount = vertexcount
         for i in range(0,vertexcount):
@@ -227,17 +303,25 @@ class MODVertexBufferb2fc0083:
             self.uvs.append((ReadHalfFloat(headerref.fl),1-ReadHalfFloat(headerref.fl)))
             ReadLong(headerref.fl)
     @staticmethod
-    def getSpaceAfterVert():
-        return 1+1+1+1+4+2+2+4
+    def getStructSize():
+        return 4+4+4+1+1+1+1+4+2+2+4
     @staticmethod
     def getUVOFFAfterVert():
         return 1+1+1+1+4
-
+    @staticmethod
+    def getWeightsOFFAfterUVOFF():
+        return -1
+    @staticmethod
+    def getBonesOFFAfterWeightsOFF():
+        return -1
+        
 class MODVertexBuffer366995a7:
     def __init__(self,headerref,vertexcount):
         dbg("MODVertexBuffer366995a7 %d" % vertexcount)
         self.vertarray   = []
         self.uvs         = []
+        self.weights     = []
+        self.bones       = []
         self.headerref   = headerref
         self.vertexcount = vertexcount
         for i in range(0,vertexcount):
@@ -260,18 +344,26 @@ class MODVertexBuffer366995a7:
                 Read8s(headerref.fl)
             ReadLong(headerref.fl)
     @staticmethod
-    def getSpaceAfterVert():
-        return 1+1+1+1+4+2+2+4+1+1+1+1 + 8+4
+    def getStructSize():
+        return 4+4+4+1+1+1+1+4+2+2+4+1+1+1+1 + 8+4
     @staticmethod
     def getUVOFFAfterVert():
         return 1+1+1+1+4
-
+    @staticmethod
+    def getWeightsOFFAfterUVOFF():
+        return -1
+    @staticmethod
+    def getBonesOFFAfterWeightsOFF():
+        return -1
+        
 class MODVertexBufferc9690ab8:
     def __init__(self,headerref,vertexcount):
         dbg("MODVertexBufferc9690ab8 %d" % vertexcount)
         raise Exception("ToDo")
         self.vertarray   = []
         self.uvs         = []
+        self.weights     = []
+        self.bones       = []
         self.headerref   = headerref
         self.vertexcount = vertexcount
         for i in range(0,vertexcount):
@@ -302,18 +394,26 @@ class MODVertexBufferc9690ab8:
             ReadByte(headerref.fl)
             ReadByte(headerref.fl)
     @staticmethod
-    def getSpaceAfterVert():
-        return 1+1+1+1+4+2+2+2+2+1+1+1+1 +1+1+1+1+1+1+1+1
+    def getStructSize():
+        return 4+4+4+1+1+1+1+4+2+2+2+2+1+1+1+1 +1+1+1+1+1+1+1+1
     @staticmethod
     def getUVOFFAfterVert():
         return 1+1+1+1+4
-
+    @staticmethod
+    def getWeightsOFFAfterUVOFF():
+        return -1
+    @staticmethod
+    def getBonesOFFAfterWeightsOFF():
+        return -1
+        
 class MODVertexBuffer5e7f202d:
     def __init__(self,headerref,vertexcount):
         dbg("MODVertexBuffer5e7f202d %d" % vertexcount)
         raise Exception("ToDo")
         self.vertarray   = []
         self.uvs         = []
+        self.weights     = []
+        self.bones       = []
         self.headerref   = headerref
         self.vertexcount = vertexcount
         for i in range(0,vertexcount):
@@ -329,17 +429,25 @@ class MODVertexBuffer5e7f202d:
             self.uvs.append((ReadHalfFloat(headerref.fl),1-ReadHalfFloat(headerref.fl)))
             ReadLong(headerref.fl)
     @staticmethod
-    def getSpaceAfterVert():
-        return 1+1+1+1+4+2+2+4
+    def getStructSize():
+        return 4+4+4+1+1+1+1+4+2+2+4
     @staticmethod
     def getUVOFFAfterVert():
         return 1+1+1+1+4
+    @staticmethod
+    def getWeightsOFFAfterUVOFF():
+        return -1
+    @staticmethod
+    def getBonesOFFAfterWeightsOFF():
+        return -1
         
 class MODVertexBufferd829702c:
     def __init__(self,headerref,vertexcount):
         dbg("MODVertexBufferd829702c %d" % vertexcount)
         self.vertarray   = []
         self.uvs         = []
+        self.weights     = []
+        self.bones       = []
         self.headerref   = headerref
         self.vertexcount = vertexcount
         for i in range(0,vertexcount):
@@ -354,17 +462,25 @@ class MODVertexBufferd829702c:
             ReadLong(headerref.fl)
             self.uvs.append((ReadHalfFloat(headerref.fl),1-ReadHalfFloat(headerref.fl)))
     @staticmethod
-    def getSpaceAfterVert():
-        return 1+1+1+1+4+2+2
+    def getStructSize():
+        return 4+4+4+1+1+1+1+4+2+2
     @staticmethod
     def getUVOFFAfterVert():
         return 1+1+1+1+4
-
+    @staticmethod
+    def getWeightsOFFAfterUVOFF():
+        return -1
+    @staticmethod
+    def getBonesOFFAfterWeightsOFF():
+        return -1
+        
 class MODVertexBufferb8e69244:
     def __init__(self,headerref,vertexcount):
         dbg("MODVertexBufferd829702c %d" % vertexcount)
         self.vertarray   = []
         self.uvs         = []
+        self.weights     = []
+        self.bones       = []
         self.headerref   = headerref
         self.vertexcount = vertexcount
         for i in range(0,vertexcount):
@@ -393,15 +509,23 @@ class MODVertexBufferb8e69244:
             ReadByte(headerref.fl)
             
     @staticmethod
-    def getSpaceAfterVert():
-        return 1+1+1+1+4+2+2+4+1+1+1+1+1*9+4 +1+1+1+1
+    def getStructSize():
+        return 4+4+4+1+1+1+1+4+2+2+4+1+1+1+1+1*9+4 +1+1+1+1
     @staticmethod
     def getUVOFFAfterVert():
         return 1+1+1+1+4
-
+    @staticmethod
+    def getWeightsOFFAfterUVOFF():
+        return -1
+    @staticmethod
+    def getBonesOFFAfterWeightsOFF():
+        return -1
+        
 MODVertexBuffera5104ca0 = MODVertexBuffer5e7f202d
 MODVertexBufferf637401c = MODVertexBufferf06033f
 MODVertexBuffera756f2f9 = MODVertexBufferd829702c
+
+################################################################ END Vertex Buffers
 
 
 pos = {}
@@ -463,29 +587,29 @@ def _wrhf(float32):
         f16 = sign
     return f16
 def _rdhf(float16):
-		s = int((float16 >> 15) & 0x00000001)    # sign
-		e = int((float16 >> 10) & 0x0000001f)    # exponent
-		f = int(float16 & 0x000003ff)            # fraction
+        s = int((float16 >> 15) & 0x00000001)    # sign
+        e = int((float16 >> 10) & 0x0000001f)    # exponent
+        f = int(float16 & 0x000003ff)            # fraction
 
-		if e == 0:
-			if f == 0:
-				return int(s << 31)
-			else:
-				while not (f & 0x00000400):
-					f = f << 1
-					e -= 1
-				e += 1
-				f &= ~0x00000400
-				#print(s,e,f)
-		elif e == 31:
-			if f == 0:
-				return int((s << 31) | 0x7f800000)
-			else:
-				return int((s << 31) | 0x7f800000 | (f << 13))
+        if e == 0:
+            if f == 0:
+                return int(s << 31)
+            else:
+                while not (f & 0x00000400):
+                    f = f << 1
+                    e -= 1
+                e += 1
+                f &= ~0x00000400
+                #print(s,e,f)
+        elif e == 31:
+            if f == 0:
+                return int((s << 31) | 0x7f800000)
+            else:
+                return int((s << 31) | 0x7f800000 | (f << 13))
 
-		e = e + (127 -15)
-		f = f << 13
-		return unpack('f',pack('I',int((s << 31) | (e << 23) | f)))[0]
+        e = e + (127 -15)
+        f = f << 13
+        return unpack('f',pack('I',int((s << 31) | (e << 23) | f)))[0]
 
 def Read8s(fl):
     return ReadByte(fl)*0.0078125
@@ -529,7 +653,7 @@ def WriteHalfFloats(fl,floats32):
     content = c1 + p + c2
 def WriteFloats(fl,floats):
     global pos,content
-    dbg("WriteFloats at 0x%08x %s" % (pos[fl],floats))
+    #dbg("WriteFloats at 0x%08x %s" % (pos[fl],floats))
     if pos[fl]==0:
         raise Exception("Invalid write position")
     p = pack("%df" % len(floats),*floats)
@@ -539,7 +663,7 @@ def WriteFloats(fl,floats):
     content = c1 + p + c2
 def WriteBytes(fl,bytes):
     global pos,content
-    dbg("WriteBytes at 0x%08x %s" % (pos[fl],bytes))
+    #dbg("WriteBytes at 0x%08x %s" % (pos[fl],bytes))
     if pos[fl]==0:
         raise Exception("Invalid write position")
     p = pack("%dB" % len(bytes),*bytes)
@@ -549,7 +673,7 @@ def WriteBytes(fl,bytes):
     content = c1 + p + c2
 def WriteLongs(fl,longs):
     global pos,content
-    dbg("WriteLongs at 0x%08x %s" % (pos[fl],longs))
+    #dbg("WriteLongs at 0x%08x %s" % (pos[fl],longs))
     if pos[fl]==0:
         raise Exception("Invalid write position")
     p = pack("%dL" % len(longs),*longs)
@@ -558,6 +682,10 @@ def WriteLongs(fl,longs):
     pos[fl] += len(longs)*4
     content = c1 + p + c2
 def getPos(fl):
+    if pos[fl] < 0 :
+        raise Exception("invalid pos detected! [%d]" % pos[fl])
+    if pos[fl] > 0x100000000 :
+        raise Exception("invalid pos detected! [%d]" % pos[fl])
     return pos[fl]
 
     
@@ -695,6 +823,7 @@ class MeshPart:
         verts2 = sorted(bm.vertices, key=lambda v: my_id.data[v.index].value)
         verts = [vert.co for vert in verts2]
         
+        
         uvs = {}
         if len(bm.uv_layers)>0:
             vertIdxMap = {}
@@ -707,11 +836,20 @@ class MeshPart:
                 for loop in p.loop_indices:
                     uvs[vertIdxMap[bm.loops[loop].vertex_index]] = bm.uv_layers[0].data[loop].uv
                 
+        weights = {}
+        bones = {}
+        vi = 0
+        for v in verts2:
+            bones[v.index] = [int(obj.vertex_groups[g.group].name.split(".")[1]) for g in v.groups]
+            vertWeights = []
+            for g in v.groups:
+                vertWeights.append(g.weight)
+            weights[v.index] = vertWeights
         
         BOFF=self.VertexSub+self.FaceAdd
         dbg("self.VertexOffset %08x" % (headerref.VertexOffset+self.VertexOffset+self.BlockSize*BOFF))
         Seek(fl, (headerref.VertexOffset+self.VertexOffset+self.BlockSize*BOFF))
-        self.writemeshdataF(self,fl,verts,uvs)
+        self.writemeshdataF(self,fl,verts,uvs,weights,bones)
     def getName(self):
         return "MyObject.%05d.%08x" % (self.uid,self.BlockType)
 
@@ -863,24 +1001,27 @@ class ImportMOD3(Operator, ImportHelper):
         Seek(fl,self.BonesOffset)
     
     
-    def writemeshdatav1(self,meshPart,fl,vertices,uvs):
+    def writemeshdatav1(self,meshPart,fl,vertices,uvs,weights,bones):
         raise Exception("NotImplementedError")
-    def writemeshdatav2(self,meshPart,fl,vertices,uvs):
+    def writemeshdatav2(self,meshPart,fl,vertices,uvs,weights,bones):
         raise Exception("NotImplementedError")
-    def writemeshdatav3(self,meshPart,fl,vertices,uvs):
+    def writemeshdatav3(self,meshPart,fl,vertices,uvs,weights,bones):
         dbg("writemeshdatav3 %s meshPart.VertexCount: %d , vertices: %d" % (meshPart.getName(),meshPart.VertexCount,len(vertices)))
         if meshPart.VertexCount != len(vertices):
             raise Exception("different vertices counts are not (yet) permitted!")
         uvi = 0
+        vi = 0
         for v3 in vertices:
             vl=[]
             for v in v3:
                 vl.append(v)
             if(len(vl) != 3):
                 raise Exception("verticesCount != 3")
+            vStartPos = getPos(fl)
+            #dbg("vStartPos: %08x" % vStartPos)
             WriteFloats(fl,vl)
             vertexBuffer = eval("MODVertexBuffer%08x" % meshPart.BlockType)
-            spaceAfterVert = vertexBuffer.getSpaceAfterVert()
+            structSize = vertexBuffer.getStructSize()
             uvOFF = vertexBuffer.getUVOFFAfterVert()
             fseek(fl,uvOFF)
             if len(uvs)>0:
@@ -888,7 +1029,36 @@ class ImportMOD3(Operator, ImportHelper):
                 uvi += 1
             else:
                 fseek(fl,4)
-            fseek(fl,spaceAfterVert-uvOFF-4)
+            weightsOff = vertexBuffer.getWeightsOFFAfterUVOFF()
+            bonesOff  = vertexBuffer.getBonesOFFAfterWeightsOFF()
+            if (weightsOff != -1) and (bonesOff != -1) and (vi in weights) and (vi in bones):
+                fseek(fl,weightsOff)
+                w1 = 0
+                w2 = 0
+                w3 = 0
+                lw = len(weights[vi])
+                if lw > 0:
+                    w1 = weights[vi][0]
+                if lw > 1:
+                    w2 = weights[vi][1]
+                if lw > 2:
+                    w3 = weights[vi][2]
+                weightVal = int(w1 / WEIGHT_MULTIPLIER) + (int(w2/ WEIGHT_MULTIPLIER)<<10) + (int(w3/ WEIGHT_MULTIPLIER)<<20)
+                WriteLongs(fl,[weightVal])
+                
+                boneList = bones[vi]
+                while len(bones[vi]) < 4:
+                    boneList.append(0)
+                WriteBytes(fl,boneList)
+            else:
+                weightsOff = 0
+                bonesOff = 0
+                
+                
+                
+            #dbg("Next start pos: %08x (structSize: %d)" % (vStartPos+structSize,structSize))
+            Seek(fl,vStartPos+structSize) 
+            vi += 1
         
     def loadmeshdatav1(self,meshPart):
         f = eval("MODVertexBuffer%08x" % meshPart.BlockType)
@@ -1192,8 +1362,10 @@ class ImportMOD3(Operator, ImportHelper):
                     verts2.append(v)
                     bmv = bm.verts.new(v)
                     bmv[my_id] = vi
+                    bmv.index = vi
                     verts.append(bmv)
                     vi += 1
+
                 
                 if(self.import_textures):
                     tex = bm.faces.layers.tex.new("main_uv_texture")
@@ -1247,26 +1419,28 @@ class ImportMOD3(Operator, ImportHelper):
                 obj.select = True  # select object
 
                 # make the bmesh the object's mesh
-                bm.to_mesh(mesh)  
+                bm.to_mesh(mesh)
+                
+                
+                if len(verts)>0:
+                    boneIds = []
+                    for v in verts:
+                        v2 = verts2[v[my_id]]
+                        if (len(m.meshdata.bones)>0) and len(m.meshdata.bones[v[my_id]])>0:
+                            wi = 0
+                            for bId in m.meshdata.bones[v[my_id]]:
+                                if bId not in boneIds:
+                                    boneIds.append(bId)
+                                    vg = obj.vertex_groups.new("Bone.%d" % bId)
+                                else:
+                                    vg = obj.vertex_groups["Bone.%d" % bId]
+                                #dbg("add %d to vg: Bone%d" % (v.index,bId))
+                                vg.add([v.index],m.meshdata.weights[v[my_id]][wi],"ADD")
+                                wi += 1
+
                 mesh.materials.append(shadeless)
                 mesh["LOD"] = m.LOD
 
-                #if(self.import_textures):
-                #    uv_texture = mesh.uv_textures.new(name="main_uv_texture")
-                #    dbg("UV_LAYERS: %d" % len(mesh.uv_layers.items()))
-                #    uv_layers = mesh.uv_layers
-                #    if len(uv_texture.data) == 0:
-                #        raise Exception("Unexpected uv_texture.data length.")
-                #    mesh.materials.append(shadeless)
-                #    vi = 0
-                #    for face_tex in uv_texture.data:
-                #        face_tex.image = bpy.data.images[0]
-                #        if vi < len(m.meshdata.uvs):
-                #            uvLoop = uv_layers[0].data
-                #            #dbg(uvLoop)
-                #            uvLoop[vi].uv = m.meshdata.uvs[vi]
-                #        vi += 1
-                    
                 bm.free()  # always do this when finished
             else:
                 dbg("Skipped mesh %d because of empty data" % pi)
