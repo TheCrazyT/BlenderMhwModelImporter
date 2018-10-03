@@ -1,6 +1,10 @@
 #Ported to blender from "MT Framework tools" https://www.dropbox.com/s/4ufvrgkdsioe3a6/MT%20Framework.mzp?dl=0 
 #(https://lukascone.wordpress.com/2017/06/18/mt-framework-tools/)
 
+WEIGHTS3_BONES4 = 1
+WEIGHTS7_BONES8 = 2
+WEIGHTS0_BONES0 = 3
+
 EMBED_MODE_NONE = "embed_none"
 EMBED_MODE_REFERENCE = "embed_reference"
 EMBED_MODE_DATA = "embed_data"
@@ -18,8 +22,10 @@ ENUM_LAYER_MODE_NONE = (LAYER_MODE_NONE,'None', '')
 ENUM_LAYER_MODE_PARTS = (LAYER_MODE_PARTS,'mesh parts','Try to move mesh parts evenly accross the layers')
 ENUM_LAYER_MODE_LOD = (LAYER_MODE_LOD,'lod-level','Try group mesh parts based on their lod-level evenly accross the layers')
 
-content=bytes("","UTF-8")
+content = bytes("","UTF-8")
+contentStream = None
 
+from io import BytesIO
 import binascii
 import mathutils 
 import base64
@@ -41,6 +47,7 @@ x64=64
 (config,CHUNK_PATH,PATH) = initConfig()
 
 WEIGHT_MULTIPLIER = 0.000977517
+WEIGHT_MULTIPLIER2 = 0.25
 BIT_LENGTH_10 = 0x3ff
 def proxima(value1,value2=0,epsilon=0.0001):
     return (value1 <= (value2+epsilon)) and (value1 >= (value2-epsilon))
@@ -64,13 +71,25 @@ def calcBonesAndWeightsArr(cnt,weights,bones):
                 cwt.append(weights[b])
     return (cwt,cbn)
 
-def calcBonesAndWeights(cnt,weightVal,bns):
+def calcBonesAndWeights(cnt,weightVal,weightVal2,bns):
     global WEIGHT_MULTIPLIER
     wt = []
     wt.append((weightVal & BIT_LENGTH_10)*WEIGHT_MULTIPLIER)
     wt.append(((weightVal>>10) & BIT_LENGTH_10)*WEIGHT_MULTIPLIER)
     wt.append(((weightVal>>20) & BIT_LENGTH_10)*WEIGHT_MULTIPLIER)
-    wt.append(1 - wt[0] - wt[1] - wt[2])
+    
+    if cnt > 4:
+        wt.append((weightVal2[0]) * WEIGHT_MULTIPLIER2)
+        wt.append((weightVal2[0]) * WEIGHT_MULTIPLIER2)
+        wt.append((weightVal2[0]) * WEIGHT_MULTIPLIER2)
+        wt.append((weightVal2[0]) * WEIGHT_MULTIPLIER2)
+        wt.append(1 - wt[0] - wt[1] - wt[2] - wt[3] - wt[4] - wt[5]- wt[6])
+        if wt[7] < 0:
+            wt[7] = 0
+    else:
+        wt.append(1 - wt[0] - wt[1] - wt[2])
+
+    
     return calcBonesAndWeightsArr(cnt,wt,bns)
 
 
@@ -133,7 +152,7 @@ class MODVertexBufferf06033f:
             self.uvs.append((ReadHalfFloat(headerref.fl),1-ReadHalfFloat(headerref.fl)))
             wts = ReadLong(headerref.fl)
             bns = [ReadByte(headerref.fl),ReadByte(headerref.fl),ReadByte(headerref.fl),ReadByte(headerref.fl)]
-            [weights,bones] = calcBonesAndWeights(4,wts,bns)
+            [weights,bones] = calcBonesAndWeights(4,wts,[],bns)
             self.weights.append(weights)
             self.bones.append(bones)
     @staticmethod
@@ -148,6 +167,9 @@ class MODVertexBufferf06033f:
     @staticmethod
     def getBonesOFFAfterWeightsOFF():
         return 0
+    @staticmethod
+    def getBoneMode():
+        return WEIGHTS3_BONES4
         
 class MODVertexBuffer81f58067:
     def __init__(self,headerref,vertexcount):
@@ -169,20 +191,14 @@ class MODVertexBuffer81f58067:
             ReadByte(headerref.fl)
             ReadLong(headerref.fl)
             self.uvs.append((ReadHalfFloat(headerref.fl),1-ReadHalfFloat(headerref.fl)))
-            ReadLong(headerref.fl)
-            ReadByte(headerref.fl)
-            ReadByte(headerref.fl)
-            ReadByte(headerref.fl)
-            ReadByte(headerref.fl)
-            ReadByte(headerref.fl)
-            
-            ReadByte(headerref.fl)
-            ReadByte(headerref.fl)
-            ReadByte(headerref.fl)
-            ReadByte(headerref.fl)
-            ReadByte(headerref.fl)
-            ReadByte(headerref.fl)
-            ReadByte(headerref.fl)
+            wts = ReadLong(headerref.fl)
+            wts2 = [ReadByte(headerref.fl),ReadByte(headerref.fl),ReadByte(headerref.fl),ReadByte(headerref.fl)]            
+            bns = [ReadByte(headerref.fl),ReadByte(headerref.fl),ReadByte(headerref.fl),ReadByte(headerref.fl),
+                ReadByte(headerref.fl),ReadByte(headerref.fl),ReadByte(headerref.fl),ReadByte(headerref.fl)]
+            [weights,bones] = calcBonesAndWeights(8,wts,wts2,bns)
+            self.weights.append(weights)
+            self.bones.append(bones)
+
     @staticmethod
     def getStructSize():
         return 4+4+4+1+1+1+1+4+2+2+4+1+1+1+1+1 +1+1+1+1+1+1+1
@@ -195,7 +211,10 @@ class MODVertexBuffer81f58067:
     @staticmethod
     def getBonesOFFAfterWeightsOFF():
         return -1
-        
+    @staticmethod
+    def getBoneMode():
+        return WEIGHTS7_BONES8
+       
 class MODVertexBufferf471fe45:
     def __init__(self,headerref,vertexcount):
         dbg("MODVertexBufferf471fe45 %d" % vertexcount)
@@ -220,7 +239,7 @@ class MODVertexBufferf471fe45:
             self.uvs2.append((ReadHalfFloat(headerref.fl),1-ReadHalfFloat(headerref.fl)))
             wts = ReadLong(headerref.fl)
             bns = [ReadByte(headerref.fl),ReadByte(headerref.fl),ReadByte(headerref.fl),ReadByte(headerref.fl)]
-            [weights,bones] = calcBonesAndWeights(4,wts,bns)
+            [weights,bones] = calcBonesAndWeights(4,wts,[],bns)
             self.weights.append(weights)
             self.bones.append(bones)
     @staticmethod
@@ -235,7 +254,10 @@ class MODVertexBufferf471fe45:
     @staticmethod
     def getBonesOFFAfterWeightsOFF():
         return 0
-        
+    @staticmethod
+    def getBoneMode():
+        return WEIGHTS3_BONES4
+
 class MODVertexBuffer3c730760:
     def __init__(self,headerref,vertexcount):
         dbg("MODVertexBuffer3c730760 %d" % vertexcount)
@@ -258,7 +280,7 @@ class MODVertexBuffer3c730760:
             self.uvs.append((ReadHalfFloat(headerref.fl),1-ReadHalfFloat(headerref.fl)))
             wts = ReadLong(headerref.fl)
             bns = [ReadByte(headerref.fl),ReadByte(headerref.fl),ReadByte(headerref.fl),ReadByte(headerref.fl)]
-            [weights,bones] = calcBonesAndWeights(4,wts,bns)
+            [weights,bones] = calcBonesAndWeights(4,wts,[],bns)
             self.weights.append(weights)
             self.bones.append(bones)
             
@@ -279,7 +301,10 @@ class MODVertexBuffer3c730760:
     @staticmethod
     def getBonesOFFAfterWeightsOFF():
         return 0      
-        
+    @staticmethod
+    def getBoneMode():
+        return WEIGHTS3_BONES4
+
 class MODVertexBufferb2fc0083:
     def __init__(self,headerref,vertexcount):
         dbg("MODVertexBufferb2fc0083 %d" % vertexcount)
@@ -314,6 +339,9 @@ class MODVertexBufferb2fc0083:
     @staticmethod
     def getBonesOFFAfterWeightsOFF():
         return -1
+    @staticmethod
+    def getBoneMode():
+        return WEIGHTS0_BONES0
         
 class MODVertexBuffer366995a7:
     def __init__(self,headerref,vertexcount):
@@ -335,13 +363,13 @@ class MODVertexBuffer366995a7:
             ReadByte(headerref.fl)
             ReadLong(headerref.fl)
             self.uvs.append((ReadHalfFloat(headerref.fl),1-ReadHalfFloat(headerref.fl)))
-            ReadLong(headerref.fl)
-            Read8s(headerref.fl)
-            Read8s(headerref.fl)
-            Read8s(headerref.fl)
-            Read8s(headerref.fl)
-            for b in range(0,8):
-                Read8s(headerref.fl)
+            wts = ReadLong(headerref.fl)
+            wts2 = [ReadByte(headerref.fl),ReadByte(headerref.fl),ReadByte(headerref.fl),ReadByte(headerref.fl)]            
+            bns = [ReadByte(headerref.fl),ReadByte(headerref.fl),ReadByte(headerref.fl),ReadByte(headerref.fl),
+                ReadByte(headerref.fl),ReadByte(headerref.fl),ReadByte(headerref.fl),ReadByte(headerref.fl)]
+            [weights,bones] = calcBonesAndWeights(8,wts,wts2,bns)
+            self.weights.append(weights)
+            self.bones.append(bones)
             ReadLong(headerref.fl)
     @staticmethod
     def getStructSize():
@@ -355,6 +383,9 @@ class MODVertexBuffer366995a7:
     @staticmethod
     def getBonesOFFAfterWeightsOFF():
         return -1
+    @staticmethod
+    def getBoneMode():
+        return WEIGHTS7_BONES8
         
 class MODVertexBufferc9690ab8:
     def __init__(self,headerref,vertexcount):
@@ -405,6 +436,9 @@ class MODVertexBufferc9690ab8:
     @staticmethod
     def getBonesOFFAfterWeightsOFF():
         return -1
+    @staticmethod
+    def getBoneMode():
+        return WEIGHTS7_BONES8
         
 class MODVertexBuffer5e7f202d:
     def __init__(self,headerref,vertexcount):
@@ -440,6 +474,9 @@ class MODVertexBuffer5e7f202d:
     @staticmethod
     def getBonesOFFAfterWeightsOFF():
         return -1
+    @staticmethod
+    def getBoneMode():
+        return WEIGHTS0_BONES0
         
 class MODVertexBufferd829702c:
     def __init__(self,headerref,vertexcount):
@@ -473,6 +510,9 @@ class MODVertexBufferd829702c:
     @staticmethod
     def getBonesOFFAfterWeightsOFF():
         return -1
+    @staticmethod
+    def getBoneMode():
+        return WEIGHTS0_BONES0  
         
 class MODVertexBufferb8e69244:
     def __init__(self,headerref,vertexcount):
@@ -494,13 +534,14 @@ class MODVertexBufferb8e69244:
             ReadByte(headerref.fl)
             ReadLong(headerref.fl)
             self.uvs.append((ReadHalfFloat(headerref.fl),1-ReadHalfFloat(headerref.fl)))
-            ReadLong(headerref.fl)
-            ReadByte(headerref.fl)
-            ReadByte(headerref.fl)
-            ReadByte(headerref.fl)
-            ReadByte(headerref.fl)
-            for b in range(1,9):
-                ReadByte(headerref.fl)
+            wts = ReadLong(headerref.fl)
+            wts2 = [ReadByte(headerref.fl),ReadByte(headerref.fl),ReadByte(headerref.fl),ReadByte(headerref.fl)]            
+            bns = [ReadByte(headerref.fl),ReadByte(headerref.fl),ReadByte(headerref.fl),ReadByte(headerref.fl),
+                ReadByte(headerref.fl),ReadByte(headerref.fl),ReadByte(headerref.fl),ReadByte(headerref.fl)]
+            [weights,bones] = calcBonesAndWeights(8,wts,wts2,bns)
+            self.weights.append(weights)
+            self.bones.append(bones)
+
             ReadLong(headerref.fl)
             
             ReadByte(headerref.fl)
@@ -510,7 +551,7 @@ class MODVertexBufferb8e69244:
             
     @staticmethod
     def getStructSize():
-        return 4+4+4+1+1+1+1+4+2+2+4+1+1+1+1+1*9+4 +1+1+1+1
+        return 4+4+4+1+1+1+1+4+2+2+4+1+1+1+1+1*8+4 +1+1+1+1
     @staticmethod
     def getUVOFFAfterVert():
         return 1+1+1+1+4
@@ -520,7 +561,9 @@ class MODVertexBufferb8e69244:
     @staticmethod
     def getBonesOFFAfterWeightsOFF():
         return -1
-        
+    @staticmethod
+    def getBoneMode():
+        return WEIGHTS7_BONES8
 MODVertexBuffera5104ca0 = MODVertexBuffer5e7f202d
 MODVertexBufferf637401c = MODVertexBufferf06033f
 MODVertexBuffera756f2f9 = MODVertexBufferd829702c
@@ -642,45 +685,41 @@ def ReadVector3(fl):
     return res
 
 def WriteHalfFloats(fl,floats32):
-    global pos,content
+    global pos,content,contentStream
     p = b''
     for f in floats32:
         f16 = _wrhf(f)
         p += pack("<H",f16)
-    c1 = content[0:pos[fl]]
-    c2 = content[pos[fl]+2*len(floats32):]
+    contentStream.seek(pos[fl])
+    contentStream.write(p)
     pos[fl] += 2*len(floats32)
-    content = c1 + p + c2
 def WriteFloats(fl,floats):
-    global pos,content
+    global pos,content,contentStream
     #dbg("WriteFloats at 0x%08x %s" % (pos[fl],floats))
     if pos[fl]==0:
         raise Exception("Invalid write position")
     p = pack("%df" % len(floats),*floats)
-    c1 = content[0:pos[fl]]
-    c2 = content[pos[fl]+len(floats)*4:]
+    contentStream.seek(pos[fl])
+    contentStream.write(p)
     pos[fl] += len(floats)*4
-    content = c1 + p + c2
 def WriteBytes(fl,bytes):
-    global pos,content
+    global pos,content,contentStream
     #dbg("WriteBytes at 0x%08x %s" % (pos[fl],bytes))
     if pos[fl]==0:
         raise Exception("Invalid write position")
     p = pack("%dB" % len(bytes),*bytes)
-    c1 = content[0:pos[fl]]
-    c2 = content[pos[fl]+len(bytes):]
+    contentStream.seek(pos[fl])
+    contentStream.write(p)
     pos[fl] += len(bytes)
-    content = c1 + p + c2
 def WriteLongs(fl,longs):
-    global pos,content
+    global pos,content,contentStream
     #dbg("WriteLongs at 0x%08x %s" % (pos[fl],longs))
     if pos[fl]==0:
         raise Exception("Invalid write position")
     p = pack("%dL" % len(longs),*longs)
-    c1 = content[0:pos[fl]]
-    c2 = content[pos[fl]+len(longs)*4:]
+    contentStream.seek(pos[fl])
+    contentStream.write(p)
     pos[fl] += len(longs)*4
-    content = c1 + p + c2
 def getPos(fl):
     if pos[fl] < 0 :
         raise Exception("invalid pos detected! [%d]" % pos[fl])
@@ -866,7 +905,7 @@ class ExportMOD3(Operator, ImportHelper):
     #            description="overwrite the level of detail of the other meshes (for example if you used 'Only import high LOD-parts').",
     #            default=False)
     def execute(self, context):
-        global content,pos
+        global content,pos,contentStream
         if not 'data' in bpy.data.texts:
             raise Exception("Make shure to import with \"Reference/Embed original data.\" first.")
         scene = bpy.context.scene
@@ -880,6 +919,7 @@ class ExportMOD3(Operator, ImportHelper):
             dbg("path:%s" % path)
             with open(path, 'rb') as content_file:
                 content = content_file.read()
+                contentStream = BytesIO(content)
         else:
             data = base64.b64decode(dataText)
             content = zlib.decompress(data)
@@ -892,6 +932,8 @@ class ExportMOD3(Operator, ImportHelper):
         for p in i.parts:
             p.writeVertexes(i.fl)
             p.writeCustomProperties(i.fl)
+            
+            content = contentStream.getvalue()
         with open(self.filepath, 'wb') as content_file:
             content_file.write(content)
         return {'FINISHED'}
@@ -1012,14 +1054,11 @@ class ImportMOD3(Operator, ImportHelper):
         uvi = 0
         vi = 0
         for v3 in vertices:
-            vl=[]
-            for v in v3:
-                vl.append(v)
-            if(len(vl) != 3):
+            if(len(v3) != 3):
                 raise Exception("verticesCount != 3")
             vStartPos = getPos(fl)
             #dbg("vStartPos: %08x" % vStartPos)
-            WriteFloats(fl,vl)
+            WriteFloats(fl,v3)
             vertexBuffer = eval("MODVertexBuffer%08x" % meshPart.BlockType)
             structSize = vertexBuffer.getStructSize()
             uvOFF = vertexBuffer.getUVOFFAfterVert()
@@ -1033,23 +1072,65 @@ class ImportMOD3(Operator, ImportHelper):
             bonesOff  = vertexBuffer.getBonesOFFAfterWeightsOFF()
             if (weightsOff != -1) and (bonesOff != -1) and (vi in weights) and (vi in bones):
                 fseek(fl,weightsOff)
-                w1 = 0
-                w2 = 0
-                w3 = 0
-                lw = len(weights[vi])
-                if lw > 0:
-                    w1 = weights[vi][0]
-                if lw > 1:
-                    w2 = weights[vi][1]
-                if lw > 2:
-                    w3 = weights[vi][2]
-                weightVal = int(w1 / WEIGHT_MULTIPLIER) + (int(w2/ WEIGHT_MULTIPLIER)<<10) + (int(w3/ WEIGHT_MULTIPLIER)<<20)
-                WriteLongs(fl,[weightVal])
-                
-                boneList = bones[vi]
-                while len(bones[vi]) < 4:
-                    boneList.append(0)
-                WriteBytes(fl,boneList)
+                if(vertexBuffer.getBoneMode() == WEIGHTS3_BONES4):
+                    w1 = 0
+                    w2 = 0
+                    w3 = 0
+                    lw = len(weights[vi])
+                    if lw > 0:
+                        w1 = weights[vi][0]
+                    if lw > 1:
+                        w2 = weights[vi][1]
+                    if lw > 2:
+                        w3 = weights[vi][2]
+                    weightVal = int(w1 / WEIGHT_MULTIPLIER) + (int(w2/ WEIGHT_MULTIPLIER)<<10) + (int(w3/ WEIGHT_MULTIPLIER)<<20)
+                    WriteLongs(fl,[weightVal])
+                    fseek(fl,bonesOff)
+                    
+                    boneList = bones[vi]
+                    while len(bones[vi]) < 4:
+                        boneList.append(0)
+                    WriteBytes(fl,boneList[0:4])
+                elif(vertexBuffer.getBoneMode() == WEIGHTS7_BONES8):
+                    w1 = 0
+                    w2 = 0
+                    w3 = 0
+
+                    w4 = 0
+                    w5 = 0
+                    w6 = 0
+                    w7 = 0
+
+
+                    lw = len(weights[vi])
+                    if lw > 0:
+                        w1 = weights[vi][0]
+                    if lw > 1:
+                        w2 = weights[vi][1]
+                    if lw > 2:
+                        w3 = weights[vi][2]
+
+                    if lw > 3:
+                        w4 = weights[vi][3]
+                    if lw > 4:
+                        w5 = weights[vi][4]
+                    if lw > 5:
+                        w6 = weights[vi][5]
+                    if lw > 6:
+                        w7 = weights[vi][6]
+                    weightVal = int(w1 / WEIGHT_MULTIPLIER) + (int(w2/ WEIGHT_MULTIPLIER)<<10) + (int(w3/ WEIGHT_MULTIPLIER)<<20)
+                    WriteLongs(fl,[weightVal])
+
+                    WriteBytes(fl,[int(w4 / WEIGHT_MULTIPLIER2) & 0xFF,int(w5 / WEIGHT_MULTIPLIER2) & 0xFF,int(w6 / WEIGHT_MULTIPLIER2) & 0xFF,int(w7 / WEIGHT_MULTIPLIER2) & 0xFF])
+                    
+                    fseek(fl,bonesOff)
+                    boneList = bones[vi]
+                    while len(bones[vi]) < 8:
+                        boneList.append(0)
+                    WriteBytes(fl,boneList[0:8])
+                else:
+                    weightsOff = 0
+                    bonesOff = 0
             else:
                 weightsOff = 0
                 bonesOff = 0
