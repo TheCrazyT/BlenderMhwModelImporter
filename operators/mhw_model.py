@@ -53,6 +53,35 @@ def proxima(value1,value2=0,epsilon=0.0001):
     return (value1 <= (value2+epsilon)) and (value1 >= (value2-epsilon))
 
 
+class matrix3:
+    def __init__(self,v):
+        self.row1 = [v,v,v]
+        self.row2 = [v,v,v]
+        self.row3 = [v,v,v]
+        self.row4 = [v,v,v]
+
+def readmatrix44(headerref):
+    mtx = matrix3(0)
+    if headerref.bendian:
+        mtx.row1 = ReadBEVector3(headerref.fl)
+        ReadLong(headerref.fl)
+        mtx.row2 = ReadBEVector3(headerref.fl)
+        ReadLong(headerref.fl)
+        mtx.row3 = ReadBEVector3(headerref.fl)
+        ReadLong(headerref.fl)
+        mtx.row4 = ReadBEVector3(headerref.fl)
+        ReadLong(headerref.fl)
+    else:
+        mtx.row1 = ReadVector3(headerref.fl)
+        ReadLong(headerref.fl)
+        mtx.row2 = ReadVector3(headerref.fl)
+        ReadLong(headerref.fl)
+        mtx.row3 = ReadVector3(headerref.fl)
+        ReadLong(headerref.fl)
+        mtx.row4 = ReadVector3(headerref.fl)
+        ReadLong(headerref.fl)
+    return mtx
+
 def calcBonesAndWeightsArr(cnt,weights,bones):
     weightArrResult = []
     boneArrResult = []
@@ -678,6 +707,12 @@ def ReadPointer(fl,size):
         pos[fl]+=8
         return res
     return None
+    
+def ReadBEVector3(fl):
+    global pos,content
+    res = unpack(">fff",content[pos[fl]:pos[fl]+4*3])
+    pos[fl]+=4*3
+    return res
 def ReadVector3(fl):
     global pos,content
     res = unpack("fff",content[pos[fl]:pos[fl]+4*3])
@@ -892,6 +927,15 @@ class MeshPart:
     def getName(self):
         return "MyObject.%05d.%08x" % (self.uid,self.BlockType)
 
+class MODBoneInfo2:
+    def __init__(self,fl,bendian):
+        self.id = ReadShort(fl)
+        self.parentid = ReadByte(fl)
+        self.child = ReadByte(fl)
+        fseek(fl,20)
+
+        
+
 class ExportMOD3(Operator, ImportHelper):
     bl_idname = "custom_import.export_mhw"
     bl_label = "Export MHW MOD file (.mod3)"
@@ -1038,10 +1082,89 @@ class ImportMOD3(Operator, ImportHelper):
             self.BoneMapCount = None
         dbg("%d" % pos[fl])
     
+    
+    def addArmature(self,name):
+        bpy.ops.object.armature_add()
+        ob = bpy.context.scene.objects.active
+        #ob.name ="give me a good name!"
+        arm = ob.data
+        arm.name = name
+        return arm
+        #bpy.ops.object.mode_set(mode='EDIT')
+        #for i in range(3):
+        #    bpy.ops.armature.extrude()
+        #    bpy.ops.transform.translate(value=(0.0, 0.0, 1.0))
+         
+        #for i in range(len(arm.edit_bones)):
+        #    eb = arm.edit_bones[i]
+           # eb.connected = True
+        #    eb.roll = i*(20/180*pi)
+        #    eb.tail[0] = eb.head[0] + 0.2*(i+1)
+        #bpy.ops.object.mode_set(mode='OBJECT')
+    
+    def addChildBones(self,a,parentBone,id,bones):
+        dbg("addChildBones %d" % id)
+        for b in bones:
+            if (id == b.parentid)and(b.id != id):
+                #bpy.context.scene.objects.active = bone
+                #bone2 = bpy.ops.armature.bone_primitive_add(name="Bone.%04d" % b.id)
+                #bpy.ops.armature.select_all(action='DESELECT')
+                #parentBone.select_tail = True
+                #bpy.ops.armature.extrude()
+                #bone2 = a.edit_bones[-1]
+                bone2 = a.edit_bones.new("Bone.%04d" % b.id)
+                bone2.head = Vector((1,0,0))
+                bone2.tail = Vector((0,0,0))
+
+                self.addChildBones(a,bone2,b.id,bones)
+    
     def readBones(self):
+        headerref = self.headerref
         fl = self.fl
         Seek(fl,self.BonesOffset)
-    
+        _MODBoneInfo = None
+        if headerref.Version == 237:
+            _MODBoneInfo = MODBoneInfo2
+        else:
+            raise Exception("not implemented!")
+        self.bones = []
+        self.lmatrices = []
+        self.amatrices = []
+        self.remaptable = []
+        self.remaptablesize = 0
+        for b in range(0,headerref.BoneCount):
+            self.bones.append(_MODBoneInfo(headerref.fl,headerref.bendian))
+        for b in range(0,headerref.BoneCount):
+            self.lmatrices.append(readmatrix44(headerref))
+        for b in range(0,headerref.BoneCount):
+            self.amatrices.append(readmatrix44(headerref))
+            self.remaptablesize = 512 if headerref.Version == 137 else 256
+        for b in range(0,self.remaptablesize):
+            self.remaptable.append(ReadByte(headerref.fl))
+        if headerref.BoneMapCount != None:
+            raise Exception("not implemented")
+
+    def createBones(self):
+        a = self.addArmature("MainArmature")
+        bpy.ops.object.mode_set(mode='EDIT')
+        bpy.ops.armature.select_all(action='DESELECT')
+        a.edit_bones[0].select_tail = True
+        dbg("bones: %d" % len(self.bones))
+        for b in self.bones:
+            dbg("bone: %d has parent %d" % (b.id,b.parentid))
+            if (b.parentid == b.id):
+                bpy.ops.armature.extrude()
+                bone = a.edit_bones.new("Bone.%04d" % b.id)
+                bone.head = Vector((1,0,0))
+                bone.tail = Vector((0,0,0))
+                self.addChildBones(a,bone,b.id,self.bones)
+        bpy.ops.object.mode_set(mode='OBJECT')
+        
+        for o in bpy.data.objects:
+            if o.type == "MESH":
+                bpy.context.scene.objects.active = o
+                bpy.ops.object.modifier_add(type='ARMATURE')
+                bpy.context.object.modifiers['Armature'].object = bpy.data.objects['Armature']
     
     def writemeshdatav1(self,meshPart,fl,vertices,uvs,weights,bones):
         raise Exception("NotImplementedError")
@@ -1512,9 +1635,9 @@ class ImportMOD3(Operator, ImportHelper):
                             for bId in m.meshdata.bones[v[my_id]]:
                                 if bId not in boneIds:
                                     boneIds.append(bId)
-                                    vg = obj.vertex_groups.new("Bone.%d" % bId)
+                                    vg = obj.vertex_groups.new("Bone.%04d" % bId)
                                 else:
-                                    vg = obj.vertex_groups["Bone.%d" % bId]
+                                    vg = obj.vertex_groups["Bone.%04d" % bId]
                                 #dbg("add %d to vg: Bone%d" % (v.index,bId))
                                 vg.add([v.index],m.meshdata.weights[v[my_id]][wi],"ADD")
                                 wi += 1
@@ -1528,7 +1651,7 @@ class ImportMOD3(Operator, ImportHelper):
 
             pi += 1
             #break
-
+        self.createBones()
         
 # Only needed if you want to add into a dynamic menu
 def menu_func_import(self, context):
