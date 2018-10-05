@@ -712,12 +712,12 @@ def ReadBEVector3(fl):
     global pos,content
     res = unpack(">fff",content[pos[fl]:pos[fl]+4*3])
     pos[fl]+=4*3
-    return res
+    return list(res)
 def ReadVector3(fl):
     global pos,content
     res = unpack("fff",content[pos[fl]:pos[fl]+4*3])
     pos[fl]+=4*3
-    return res
+    return list(res)
 
 def WriteHalfFloats(fl,floats32):
     global pos,content,contentStream
@@ -1029,6 +1029,10 @@ class ImportMOD3(Operator, ImportHelper):
             items=[ENUM_EMBED_MODE_NONE,ENUM_EMBED_MODE_REFERENCE,ENUM_EMBED_MODE_DATA],
             default=EMBED_MODE_REFERENCE
     )
+    do_read_bones = BoolProperty(
+            name="Import bones and armature",
+            description="Imports bones ... useful for testing poses.",
+            default=True)
 
 
     def init_main(self):
@@ -1104,6 +1108,7 @@ class ImportMOD3(Operator, ImportHelper):
     
     def addChildBones(self,a,parentBone,id,bones):
         dbg("addChildBones %d" % id)
+        i = 0
         for b in bones:
             if (id == b.parentid)and(b.id != id):
                 #bpy.context.scene.objects.active = bone
@@ -1113,10 +1118,27 @@ class ImportMOD3(Operator, ImportHelper):
                 #bpy.ops.armature.extrude()
                 #bone2 = a.edit_bones[-1]
                 bone2 = a.edit_bones.new("Bone.%04d" % b.id)
-                bone2.head = Vector((1,0,0))
-                bone2.tail = Vector((0,0,0))
+                bone2.parent = parentBone
+                #bone2.head = Vector((1,0,0))
+                #bone2.tail = Vector((0,0,0))
+                lm = self.lmatrices[i]
+                r1 = lm.row1
+                r2 = lm.row2
+                r3 = lm.row3
+                r4 = lm.row4
+                bone2.head = parentBone.tail
+                bone2.tail = parentBone.head+Vector((0.0,0.0,50.0))
+                #bone2.matrix = Matrix((
+                #                      (r1[0],r1[1],r1[2],0.0),
+                #                      (r2[0],r2[1],r2[2],0.0),
+                #                      (r3[0],r3[1],r3[2],0.0),
+                #                      (r4[0],r4[1],r4[2],0.0)
+                #                      ))
+                #bone2.bbone_x = 5.0
+                #bone2.bbone_z = 5.0
 
                 self.addChildBones(a,bone2,b.id,bones)
+            i += 1
     
     def readBones(self):
         headerref = self.headerref
@@ -1150,14 +1172,33 @@ class ImportMOD3(Operator, ImportHelper):
         bpy.ops.armature.select_all(action='DESELECT')
         a.edit_bones[0].select_tail = True
         dbg("bones: %d" % len(self.bones))
+        i = 0
+        k = 0
         for b in self.bones:
             dbg("bone: %d has parent %d" % (b.id,b.parentid))
             if (b.parentid == b.id):
                 bpy.ops.armature.extrude()
                 bone = a.edit_bones.new("Bone.%04d" % b.id)
-                bone.head = Vector((1,0,0))
-                bone.tail = Vector((0,0,0))
+                lm = self.lmatrices[i]
+                r1 = lm.row1
+                r2 = lm.row2
+                r3 = lm.row3
+                r4 = lm.row4
+                bone.tail = Vector((-20.0*k,0.0,50.0))
+                bone.head = Vector((-20.0*k,0.0,0.0))
+                k += 1
+                #bone.matrix = Matrix((
+                #                      (r1[0],r1[1],r1[2],0.0),
+                #                      (r2[0],r2[1],r2[2],0.0),
+                #                      (r3[0],r3[1],r3[2],0.0),
+                #                      (r4[0],r4[1],r4[2],0.0)
+                #                     ))
+                #bone.bbone_x = 5.0
+                #bone.bbone_z = 5.0
+
+
                 self.addChildBones(a,bone,b.id,self.bones)
+            i += 1
         bpy.ops.object.mode_set(mode='OBJECT')
         
         for o in bpy.data.objects:
@@ -1521,7 +1562,8 @@ class ImportMOD3(Operator, ImportHelper):
         Seek(fl,0)
             
         self.readHeader()
-        self.readBones()
+        if self.do_read_bones:
+            self.readBones()
         self.readMeshParts()
         self.readVertexes()
         
@@ -1650,8 +1692,9 @@ class ImportMOD3(Operator, ImportHelper):
                 dbg("Skipped mesh %d because of empty data" % pi)
 
             pi += 1
-            #break
-        self.createBones()
+
+        if self.do_read_bones:
+            self.createBones()
         
 # Only needed if you want to add into a dynamic menu
 def menu_func_import(self, context):
