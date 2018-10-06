@@ -30,6 +30,7 @@ contentStream = None
 from io import BytesIO
 import binascii
 import mathutils 
+import math
 import base64
 import zlib 
 import bpy
@@ -953,9 +954,13 @@ class ExportMOD3(Operator, ImportHelper):
  
     filter_glob = StringProperty(default="*.mod3", options={'HIDDEN'}, maxlen=255)
     
-    #overwrite_lod = BoolProperty(name="Force LOD1 (experimentel)",
-    #            description="overwrite the level of detail of the other meshes (for example if you used 'Only import high LOD-parts').",
-    #            default=False)
+    do_write_bones = BoolProperty(
+            name="Export bones and armature (experimental)",
+            description="Exports bone information.",
+            default=False)
+    overwrite_lod = BoolProperty(name="Force LOD1 (experimental)",
+                description="overwrite the level of detail of the other meshes (for example if you used 'Only import high LOD-parts').",
+                default=False)
     def execute(self, context):
         global content,pos,contentStream
         if not 'data' in bpy.data.texts:
@@ -984,11 +989,45 @@ class ExportMOD3(Operator, ImportHelper):
         for p in i.parts:
             p.writeVertexes(i.fl)
             p.writeCustomProperties(i.fl)
-            
-            content = contentStream.getvalue()
+        
+        if self.overwrite_lod:
+            for p in i.parts:
+                if p.LOD == 1:
+                    p.writeLOD(i.fl,0xFFFF)
+                else:
+                    p.writeLOD(i.fl,0)
+
+        if self.do_write_bones:
+            if "Armature" in bpy.data.objects:
+                self.writeBones(i,i.fl)
+        content = contentStream.getvalue()
         with open(self.filepath, 'wb') as content_file:
             content_file.write(content)
         return {'FINISHED'}
+
+    def writeBones(self,headerref,fl):
+        scene = bpy.context.scene
+        scene.objects.active = bpy.data.objects["Armature"]
+        #bpy.ops.armature.select_all(action='DESELECT')
+        bpy.ops.object.mode_set(mode='EDIT')
+        armature = bpy.data.objects["Armature"].data
+        if (FMT_BONE % 255) in armature.edit_bones:
+            Seek(fl,headerref.BonesOffset)
+            #TODO, also save parent structure
+            fseek(fl,headerref.BoneCount*24)
+            #store "lmatrices"
+            for i in range(0,headerref.BoneCount):
+                bone = armature.edit_bones[FMT_BONE % i]
+                t2 = bone.matrix*bone.parent.matrix.inverted()
+                #dbg("%s %s %s" % (bone.matrix,bone.parent.matrix,t2))
+                t2 *= Matrix.Translation(Vector((0,0,-1,1)))
+                #t2 *= Matrix.Rotation(90*math.pi/2,4,Vector((0,0,1)))
+                dbg("write bone %d at offset %08x:\n%s" % (i,getPos(fl),t2))
+                for r in t2.transposed().row:
+                    dbg(r)
+                    WriteFloats(fl,(r[0],r[1],r[2],r[3]))
+        bpy.ops.object.mode_set(mode='OBJECT')
+        #bpy.ops.armature.select_all(action='DESELECT')
         
 class ImportMOD3(Operator, ImportHelper):
     bl_idname = "custom_import.import_mhw"
@@ -1098,21 +1137,9 @@ class ImportMOD3(Operator, ImportHelper):
     def addArmature(self,name):
         bpy.ops.object.armature_add()
         ob = bpy.context.scene.objects.active
-        #ob.name ="give me a good name!"
         arm = ob.data
         arm.name = name
         return arm
-        #bpy.ops.object.mode_set(mode='EDIT')
-        #for i in range(3):
-        #    bpy.ops.armature.extrude()
-        #    bpy.ops.transform.translate(value=(0.0, 0.0, 1.0))
-         
-        #for i in range(len(arm.edit_bones)):
-        #    eb = arm.edit_bones[i]
-           # eb.connected = True
-        #    eb.roll = i*(20/180*pi)
-        #    eb.tail[0] = eb.head[0] + 0.2*(i+1)
-        #bpy.ops.object.mode_set(mode='OBJECT')
     
     def addChildBones(self,a,parentBone,id,bones):
         dbg("addChildBones %d" % id)
@@ -1120,46 +1147,30 @@ class ImportMOD3(Operator, ImportHelper):
         for b in bones:
             if ((id == b.parentid)and(b.id != id)):
                 dbg("addChildBone %d with parent %d" % (b.id,id))
-                #bone2 = bpy.ops.armature.bone_primitive_add(name=FMT_BONE % b.id)
-                #bpy.context.scene.objects.active = bone2
-                #bpy.ops.armature.select_all(action='DESELECT')
-                #parentBone.select_tail = True
-                #bpy.ops.armature.extrude()
-                #bone2 = a.edit_bones[-1]
                 bone2 = a.edit_bones.new(FMT_BONE % b.id)
                 bone2.parent = parentBone
-                #bone2.head = Vector((1,0,0))
-                #bone2.tail = Vector((0,0,0))
                 lm = self.lmatrices[b.id]
                 c1 = lm.col1
                 c2 = lm.col2
                 c3 = lm.col3
                 c4 = lm.col4
-                #bone2.head = parentBone.tail
-                #bone2.tail = parentBone.head+Vector((0.0,0.0,50.0))
                 t = Matrix((
                           (c1[0],c2[0],c3[0],c4[0]),
                           (c1[1],c2[1],c3[1],c4[1]),
                           (c1[2],c2[2],c3[2],c4[2]),
                           (c1[3],c2[3],c3[3],c4[3])
                           ))
-                #TODO
                 loc,rot,scal = t.decompose()
-                bone2.head = parentBone.tail+Vector(loc)
+                bone2.head = parentBone.tail
                 bone2.tail = bone2.head+Vector((0.0,0.0,1.0))
-                dbg("bone: %d l: %s r: %s s: %s" % (b.id,loc,rot,scal))
-                #m = parentBone.matrix*t
-                #bone2.transform(t)
-
-
-                #bone2.matrix = Matrix((
-                #                      (r1[0],r1[1],r1[2],0.0),
-                #                      (r2[0],r2[1],r2[2],0.0),
-                #                      (r3[0],r3[1],r3[2],0.0),
-                #                      (r4[0],r4[1],r4[2],0.0)
-                #                      ))
-                #bone2.bbone_x = 5.0
-                #bone2.bbone_z = 5.0
+                dbg("#1 bone: %d l: %s r: %s s: %s,t:\n%s" % (b.id,loc,rot,scal,t))
+                bone2.transform(t)
+                
+                t2 = bone2.matrix*bone2.parent.matrix.inverted()
+                t2 *= Matrix.Translation(Vector((0,0,-1,1)))
+                #t2 *= Matrix.Rotation(90*math.pi/2,4,Vector((0,0,1)))
+                loc,rot,scal = t2.decompose()
+                dbg("#2 bone: %d l: %s r: %s s: %s,t2:\n%s" % (b.id,loc,rot,scal,t2))
 
                 self.addChildBones(a,bone2,b.id,bones)
                 i += 1
@@ -1217,20 +1228,23 @@ class ImportMOD3(Operator, ImportHelper):
                           (c1[2],c2[2],c3[2],c4[2]),
                           (c1[3],c2[3],c3[3],c4[3])
                           ))
-                #TODO
-                loc,rot,scal = t.decompose()
-
+                #loc,rot,scal = t.decompose()
                 bone.parent = parentBone
-                bone.head = parentBone.tail+Vector(loc)
+                #bone.head = parentBone.tail+Vector(loc)
+                #bone.tail = bone.head+Vector((0.0,0.0,1.0))
+
+                loc,rot,scal = t.decompose()
+                dbg("##1 bone: %d l: %s r: %s s: %s,t:\n%s" % (b.id,loc,rot,scal,t))
+
+                bone.head = parentBone.tail
                 bone.tail = bone.head+Vector((0.0,0.0,1.0))
-                m = parentBone.matrix*t
-                dbg("bone: %d t: %s" % (b.id,t))
                 bone.transform(t)
-                #TODO
-                #bone.tail = Vector((-20.0*k,0.0,1.0))
-                #bone.head = Vector((-20.0*k,0.0,0.0))
-                #bone.tail = Vector((0.0,0.0,50.0))
-                #bone.head = Vector((0.0,0.0,0.0))
+
+                t2 = bone.matrix*bone.parent.matrix.inverted()
+                t2 *= Matrix.Translation(Vector((0,0,-1,1)))
+                #t2 *= Matrix.Rotation(90*math.pi/2,4,Vector((0,0,1)))
+                loc,rot,scal = t2.decompose()
+                dbg("#2 bone: %d l: %s r: %s s: %s,t2:\n%s" % (b.id,loc,rot,scal,t2))
                 k += 1
 
 
