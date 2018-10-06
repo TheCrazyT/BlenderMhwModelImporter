@@ -57,23 +57,23 @@ def proxima(value1,value2=0,epsilon=0.0001):
 
 class matrix3:
     def __init__(self,v):
-        self.row1 = [v,v,v]
-        self.row2 = [v,v,v]
-        self.row3 = [v,v,v]
-        self.row4 = [v,v,v]
+        self.col1 = [v,v,v]
+        self.col2 = [v,v,v]
+        self.col3 = [v,v,v]
+        self.col4 = [v,v,v]
 
 def readmatrix44(headerref):
     mtx = matrix3(0)
     if headerref.bendian:
-        mtx.row1 = ReadBEVector4(headerref.fl)
-        mtx.row2 = ReadBEVector4(headerref.fl)
-        mtx.row3 = ReadBEVector4(headerref.fl)
-        mtx.row4 = ReadBEVector4(headerref.fl)
+        mtx.col1 = ReadBEVector4(headerref.fl)
+        mtx.col2 = ReadBEVector4(headerref.fl)
+        mtx.col3 = ReadBEVector4(headerref.fl)
+        mtx.col4 = ReadBEVector4(headerref.fl)
     else:
-        mtx.row1 = ReadVector4(headerref.fl)
-        mtx.row2 = ReadVector4(headerref.fl)
-        mtx.row3 = ReadVector4(headerref.fl)
-        mtx.row4 = ReadVector4(headerref.fl)
+        mtx.col1 = ReadVector4(headerref.fl)
+        mtx.col2 = ReadVector4(headerref.fl)
+        mtx.col3 = ReadVector4(headerref.fl)
+        mtx.col4 = ReadVector4(headerref.fl)
     return mtx
 
 def calcBonesAndWeightsArr(cnt,weights,bones):
@@ -1130,23 +1130,27 @@ class ImportMOD3(Operator, ImportHelper):
                 bone2.parent = parentBone
                 #bone2.head = Vector((1,0,0))
                 #bone2.tail = Vector((0,0,0))
-                lm = self.lmatrices[i]
-                r1 = lm.row1
-                r2 = lm.row2
-                r3 = lm.row3
-                r4 = lm.row4
+                lm = self.lmatrices[b.id]
+                c1 = lm.col1
+                c2 = lm.col2
+                c3 = lm.col3
+                c4 = lm.col4
                 #bone2.head = parentBone.tail
                 #bone2.tail = parentBone.head+Vector((0.0,0.0,50.0))
                 t = Matrix((
-                          (r1[0],r1[1],r1[2],r1[3]),
-                          (r2[0],r2[1],r2[2],r2[3]),
-                          (r3[0],r3[1],r3[2],r3[3]),
-                          (r4[0],r4[1],r4[2],r4[3])
+                          (c1[0],c2[0],c3[0],c4[0]),
+                          (c1[1],c2[1],c3[1],c4[1]),
+                          (c1[2],c2[2],c3[2],c4[2]),
+                          (c1[3],c2[3],c3[3],c4[3])
                           ))
                 #TODO
-                bone2.head = parentBone.tail+Vector((10.0*i,0.0,0.0))
-                bone2.tail = bone2.head+Vector((0.0,0.0,50.0))
+                loc,rot,scal = t.decompose()
+                bone2.head = parentBone.tail+Vector(loc)
+                bone2.tail = bone2.head+Vector((0.0,0.0,1.0))
+                dbg("bone: %d l: %s r: %s s: %s" % (b.id,loc,rot,scal))
+                #m = parentBone.matrix*t
                 #bone2.transform(t)
+
 
                 #bone2.matrix = Matrix((
                 #                      (r1[0],r1[1],r1[2],0.0),
@@ -1203,20 +1207,25 @@ class ImportMOD3(Operator, ImportHelper):
                 bone = a.edit_bones.new(FMT_BONE % b.id)
 
                 lm = self.lmatrices[i]
-                r1 = lm.row1
-                r2 = lm.row2
-                r3 = lm.row3
-                r4 = lm.row4
+                c1 = lm.col1
+                c2 = lm.col2
+                c3 = lm.col3
+                c4 = lm.col4
                 t = Matrix((
-                    (r1[0],r1[1],r1[2],r1[3]),
-                    (r2[0],r2[1],r2[2],r2[3]),
-                    (r3[0],r3[1],r3[2],r3[3]),
-                    (r4[0],r4[1],r4[2],r4[3])
-                ))
+                          (c1[0],c2[0],c3[0],c4[0]),
+                          (c1[1],c2[1],c3[1],c4[1]),
+                          (c1[2],c2[2],c3[2],c4[2]),
+                          (c1[3],c2[3],c3[3],c4[3])
+                          ))
+                #TODO
+                loc,rot,scal = t.decompose()
+
                 bone.parent = parentBone
-                bone.head = parentBone.tail+Vector((10.0*k,0.0,0.0))
-                bone.tail = bone.head+Vector((0.0,0.0,50.0))
-                #bone.transform(t)
+                bone.head = parentBone.tail+Vector(loc)
+                bone.tail = bone.head+Vector((0.0,0.0,1.0))
+                m = parentBone.matrix*t
+                dbg("bone: %d t: %s" % (b.id,t))
+                bone.transform(t)
                 #TODO
                 #bone.tail = Vector((-20.0*k,0.0,1.0))
                 #bone.head = Vector((-20.0*k,0.0,0.0))
