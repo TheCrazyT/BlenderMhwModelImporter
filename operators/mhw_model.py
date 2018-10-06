@@ -5,6 +5,8 @@ WEIGHTS3_BONES4 = 1
 WEIGHTS7_BONES8 = 2
 WEIGHTS0_BONES0 = 3
 
+FMT_BONE="Bone.%04d"
+
 EMBED_MODE_NONE = "embed_none"
 EMBED_MODE_REFERENCE = "embed_reference"
 EMBED_MODE_DATA = "embed_data"
@@ -63,23 +65,15 @@ class matrix3:
 def readmatrix44(headerref):
     mtx = matrix3(0)
     if headerref.bendian:
-        mtx.row1 = ReadBEVector3(headerref.fl)
-        ReadLong(headerref.fl)
-        mtx.row2 = ReadBEVector3(headerref.fl)
-        ReadLong(headerref.fl)
-        mtx.row3 = ReadBEVector3(headerref.fl)
-        ReadLong(headerref.fl)
-        mtx.row4 = ReadBEVector3(headerref.fl)
-        ReadLong(headerref.fl)
+        mtx.row1 = ReadBEVector4(headerref.fl)
+        mtx.row2 = ReadBEVector4(headerref.fl)
+        mtx.row3 = ReadBEVector4(headerref.fl)
+        mtx.row4 = ReadBEVector4(headerref.fl)
     else:
-        mtx.row1 = ReadVector3(headerref.fl)
-        ReadLong(headerref.fl)
-        mtx.row2 = ReadVector3(headerref.fl)
-        ReadLong(headerref.fl)
-        mtx.row3 = ReadVector3(headerref.fl)
-        ReadLong(headerref.fl)
-        mtx.row4 = ReadVector3(headerref.fl)
-        ReadLong(headerref.fl)
+        mtx.row1 = ReadVector4(headerref.fl)
+        mtx.row2 = ReadVector4(headerref.fl)
+        mtx.row3 = ReadVector4(headerref.fl)
+        mtx.row4 = ReadVector4(headerref.fl)
     return mtx
 
 def calcBonesAndWeightsArr(cnt,weights,bones):
@@ -718,6 +712,17 @@ def ReadVector3(fl):
     res = unpack("fff",content[pos[fl]:pos[fl]+4*3])
     pos[fl]+=4*3
     return list(res)
+    
+def ReadBEVector4(fl):
+    global pos,content
+    res = unpack(">ffff",content[pos[fl]:pos[fl]+4*4])
+    pos[fl]+=4*4
+    return list(res)
+def ReadVector4(fl):
+    global pos,content
+    res = unpack("ffff",content[pos[fl]:pos[fl]+4*4])
+    pos[fl]+=4*4
+    return list(res)
 
 def WriteHalfFloats(fl,floats32):
     global pos,content,contentStream
@@ -928,8 +933,11 @@ class MeshPart:
         return "MyObject.%05d.%08x" % (self.uid,self.BlockType)
 
 class MODBoneInfo2:
-    def __init__(self,fl,bendian):
-        self.id = ReadShort(fl)
+    def __init__(self,internalId,fl,bendian):
+        #self.id = ReadShort(fl)
+        #self.internalId = internalId
+        ReadShort(fl)
+        self.id = internalId
         self.parentid = ReadByte(fl)
         self.child = ReadByte(fl)
         fseek(fl,20)
@@ -1110,14 +1118,15 @@ class ImportMOD3(Operator, ImportHelper):
         dbg("addChildBones %d" % id)
         i = 0
         for b in bones:
-            if (id == b.parentid)and(b.id != id):
-                #bpy.context.scene.objects.active = bone
-                #bone2 = bpy.ops.armature.bone_primitive_add(name="Bone.%04d" % b.id)
+            if ((id == b.parentid)and(b.id != id)):
+                dbg("addChildBone %d with parent %d" % (b.id,id))
+                #bone2 = bpy.ops.armature.bone_primitive_add(name=FMT_BONE % b.id)
+                #bpy.context.scene.objects.active = bone2
                 #bpy.ops.armature.select_all(action='DESELECT')
                 #parentBone.select_tail = True
                 #bpy.ops.armature.extrude()
                 #bone2 = a.edit_bones[-1]
-                bone2 = a.edit_bones.new("Bone.%04d" % b.id)
+                bone2 = a.edit_bones.new(FMT_BONE % b.id)
                 bone2.parent = parentBone
                 #bone2.head = Vector((1,0,0))
                 #bone2.tail = Vector((0,0,0))
@@ -1126,8 +1135,19 @@ class ImportMOD3(Operator, ImportHelper):
                 r2 = lm.row2
                 r3 = lm.row3
                 r4 = lm.row4
-                bone2.head = parentBone.tail
-                bone2.tail = parentBone.head+Vector((0.0,0.0,50.0))
+                #bone2.head = parentBone.tail
+                #bone2.tail = parentBone.head+Vector((0.0,0.0,50.0))
+                t = Matrix((
+                          (r1[0],r1[1],r1[2],r1[3]),
+                          (r2[0],r2[1],r2[2],r2[3]),
+                          (r3[0],r3[1],r3[2],r3[3]),
+                          (r4[0],r4[1],r4[2],r4[3])
+                          ))
+                #TODO
+                bone2.head = parentBone.tail+Vector((10.0*i,0.0,0.0))
+                bone2.tail = bone2.head+Vector((0.0,0.0,50.0))
+                #bone2.transform(t)
+
                 #bone2.matrix = Matrix((
                 #                      (r1[0],r1[1],r1[2],0.0),
                 #                      (r2[0],r2[1],r2[2],0.0),
@@ -1138,7 +1158,7 @@ class ImportMOD3(Operator, ImportHelper):
                 #bone2.bbone_z = 5.0
 
                 self.addChildBones(a,bone2,b.id,bones)
-            i += 1
+                i += 1
     
     def readBones(self):
         headerref = self.headerref
@@ -1155,7 +1175,7 @@ class ImportMOD3(Operator, ImportHelper):
         self.remaptable = []
         self.remaptablesize = 0
         for b in range(0,headerref.BoneCount):
-            self.bones.append(_MODBoneInfo(headerref.fl,headerref.bendian))
+            self.bones.append(_MODBoneInfo(b,headerref.fl,headerref.bendian))
         for b in range(0,headerref.BoneCount):
             self.lmatrices.append(readmatrix44(headerref))
         for b in range(0,headerref.BoneCount):
@@ -1174,27 +1194,35 @@ class ImportMOD3(Operator, ImportHelper):
         dbg("bones: %d" % len(self.bones))
         i = 0
         k = 0
+        parentBone = a.edit_bones[-1]
+        parentBone.name = FMT_BONE % 255
+
         for b in self.bones:
             dbg("bone: %d has parent %d" % (b.id,b.parentid))
-            if (b.parentid == b.id):
-                bpy.ops.armature.extrude()
-                bone = a.edit_bones.new("Bone.%04d" % b.id)
+            if (b.parentid == b.id)or(b.parentid == 255):
+                bone = a.edit_bones.new(FMT_BONE % b.id)
+
                 lm = self.lmatrices[i]
                 r1 = lm.row1
                 r2 = lm.row2
                 r3 = lm.row3
                 r4 = lm.row4
-                bone.tail = Vector((-20.0*k,0.0,50.0))
-                bone.head = Vector((-20.0*k,0.0,0.0))
+                t = Matrix((
+                    (r1[0],r1[1],r1[2],r1[3]),
+                    (r2[0],r2[1],r2[2],r2[3]),
+                    (r3[0],r3[1],r3[2],r3[3]),
+                    (r4[0],r4[1],r4[2],r4[3])
+                ))
+                bone.parent = parentBone
+                bone.head = parentBone.tail+Vector((10.0*k,0.0,0.0))
+                bone.tail = bone.head+Vector((0.0,0.0,50.0))
+                #bone.transform(t)
+                #TODO
+                #bone.tail = Vector((-20.0*k,0.0,1.0))
+                #bone.head = Vector((-20.0*k,0.0,0.0))
+                #bone.tail = Vector((0.0,0.0,50.0))
+                #bone.head = Vector((0.0,0.0,0.0))
                 k += 1
-                #bone.matrix = Matrix((
-                #                      (r1[0],r1[1],r1[2],0.0),
-                #                      (r2[0],r2[1],r2[2],0.0),
-                #                      (r3[0],r3[1],r3[2],0.0),
-                #                      (r4[0],r4[1],r4[2],0.0)
-                #                     ))
-                #bone.bbone_x = 5.0
-                #bone.bbone_z = 5.0
 
 
                 self.addChildBones(a,bone,b.id,self.bones)
@@ -1677,9 +1705,9 @@ class ImportMOD3(Operator, ImportHelper):
                             for bId in m.meshdata.bones[v[my_id]]:
                                 if bId not in boneIds:
                                     boneIds.append(bId)
-                                    vg = obj.vertex_groups.new("Bone.%04d" % bId)
+                                    vg = obj.vertex_groups.new(FMT_BONE % bId)
                                 else:
-                                    vg = obj.vertex_groups["Bone.%04d" % bId]
+                                    vg = obj.vertex_groups[FMT_BONE % bId]
                                 #dbg("add %d to vg: Bone%d" % (v.index,bId))
                                 vg.add([v.index],m.meshdata.weights[v[my_id]][wi],"ADD")
                                 wi += 1
