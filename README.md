@@ -17,6 +17,11 @@ Quick install instructions:
   
   Make shure that "Import-Export: MHW Model Importer" in the user-preferences window under the section "add-ons" is checked.
 
+14.10.2018:
+
+Trying to remove vertex-count limit.
+Sadly still seems to influence UV-mappings.
+
 
 03.10.2018:
   
