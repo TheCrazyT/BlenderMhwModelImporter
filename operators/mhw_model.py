@@ -431,10 +431,10 @@ class MODVertexBuffer366995a7:
         return 1+1+1+1+4
     @staticmethod
     def getWeightsOFFAfterUVOFF():
-        return -1
+        return 0
     @staticmethod
     def getBonesOFFAfterWeightsOFF():
-        return -1
+        return 0
     @staticmethod
     def getBoneMode():
         return WEIGHTS7_BONES8
@@ -621,10 +621,10 @@ class MODVertexBufferb8e69244:
         return 1+1+1+1+4
     @staticmethod
     def getWeightsOFFAfterUVOFF():
-        return -1
+        return 0
     @staticmethod
     def getBonesOFFAfterWeightsOFF():
-        return -1
+        return 0
     @staticmethod
     def getBoneMode():
         return WEIGHTS7_BONES8
