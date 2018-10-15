@@ -247,10 +247,10 @@ class MODVertexBuffer81f58067:
         return 1+1+1+1+4
     @staticmethod
     def getWeightsOFFAfterUVOFF():
-        return -1
+        return 0
     @staticmethod
     def getBonesOFFAfterWeightsOFF():
-        return -1
+        return 0
     @staticmethod
     def getBoneMode():
         return WEIGHTS7_BONES8
@@ -1600,7 +1600,7 @@ class ImportMOD3(Operator, ImportHelper):
         BOFF=meshPart.VertexSub+meshPart.FaceAdd
         dbg("meshPart.VertexOffset %08x" % (headerref.VertexOffset+meshPart.VertexOffset+meshPart.BlockSize*BOFF))
         Seek(fl, (headerref.VertexOffset+meshPart.VertexOffset+meshPart.BlockSize*BOFF))
-        dbg("writemeshdatav3 %s meshPart.VertexCount: %d , vertices: %d" % (meshPart.getName(),meshPart.VertexCount,len(vertices)))
+        dbg("writemeshdatav3 %s meshPart.VertexCount: %d , vertices: %d weights: %d bones: %d" % (meshPart.getName(),meshPart.VertexCount,len(vertices),len(weights),len(bones)))
         
         if meshPart.VertexCount != len(vertices):
             raise Exception("different vertices counts are not (yet) permitted!")
@@ -1683,9 +1683,11 @@ class ImportMOD3(Operator, ImportHelper):
                         boneList.append(0)
                     WriteBytes(fl,boneList[0:8])
                 else:
+                    dbg("wrong bone mode")
                     weightsOff = 0
                     bonesOff = 0
             else:
+                dbg("#%d no bones to write %08x %08x" % (vi,weightsOff,bonesOff))
                 weightsOff = 0
                 bonesOff = 0
                 
