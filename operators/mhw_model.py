@@ -1015,12 +1015,20 @@ class MeshPart:
         cls = eval("MODVertexBuffer%08x" % self.BlockType)
         fl = self.headerref.fl
         headerref = self.headerref
+        i = 0
         for p in parts:
             if p.getVertexRegionEnd() > currentRegionEnd:
-                p.writeVertexOffset(p.VertexOffset+cls.getStructSize()*(newVertexCount-self.VertexCount))
+                dbg("#%d oldVertexOffset: 0x%08x VertexRegionEnd: 0x%08x currentRegionEnd: 0x%08x" % (i,p.VertexOffset,p.getVertexRegionEnd(),currentRegionEnd))
+                if p.VertexOffset+cls.getStructSize()*(newVertexCount-self.VertexCount)>0xFFFFFFFF:
+                    p.writeVertexSub(p.VertexSub+(newVertexCount-self.VertexCount))
+                elif p.VertexOffset+cls.getStructSize()*(newVertexCount-self.VertexCount)>0:
+                    p.writeVertexOffset(p.VertexOffset+cls.getStructSize()*(newVertexCount-self.VertexCount))
+                else:
+                    p.writeVertexSub(p.VertexSub-(self.VertexCount-newVertexCount))
             #Vertex count should not influence relative offset ...
             #if headerref.FaceOffset+p.FaceOffset > headerref.FaceOffset+self.FaceOffset:
             #    p.writeFaceOffset(p.FaceOffset+3*(newVertexCount-self.VertexCount))
+            i += 1
         oldVertexCount = self.VertexCount
         self.VertexCount = newVertexCount
         self.headerref.FaceOffset += cls.getStructSize()*(newVertexCount-self.VertexCount)
@@ -1096,6 +1104,7 @@ class MeshPart:
             return
         obj = bpy.data.objects[n]
         bm = obj.data
+        
         my_id = bm.vertex_layers_int['id']
         verts2 = sorted(bm.vertices, key=lambda v: my_id.data[v.index].value)
         verts = [vert.co for vert in verts2]
@@ -1184,6 +1193,8 @@ def checkMeshesForModifiactions(export,i):
             continue
         obj = bpy.data.objects[n]
         bm = obj.data
+        if not 'id' in bm.vertex_layers_int:
+            bm.vertex_layers_int.new('id')            
         my_id = bm.vertex_layers_int['id']
         
         dbg("Mesh %s has file vertice-count: %d and current vertice-count: %d" % (n,p.VertexCount,len(bm.vertices)))
