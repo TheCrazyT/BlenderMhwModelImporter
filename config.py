@@ -26,15 +26,15 @@ def writeConfig():
     for x in config['DEFAULT']:
         f.write("%s=%s\n" % (x,config['DEFAULT'][x]))
     f.close()
-    print("write config:")
-    print({section: dict(config[section]) for section in config.sections()})
+    dbg("write config:")
+    dbg({section: dict(config[section]) for section in config.sections()})
 
 def initConfig():
     global config_filepath,config,PATH,CHUNK_PATH
     config = configparser.ConfigParser()
     config_path = bpy.utils.user_resource('CONFIG', path='scripts', create=True)
     config_filepath = os.path.join(config_path, "mhw_importer.config")
-    print("config_filepath: %s" % config_filepath)
+    dbg("config_filepath: %s" % config_filepath)
     if not os.path.isfile(config_filepath):
         config['DEFAULT']['INSTALL_PATH'] = "d:\\tmp\\test"
         config['DEFAULT']['CHUNK_PATH']   = "d:\\tmp\\chunk"
@@ -48,6 +48,13 @@ def initConfig():
         CHUNK_PATH = config['DEFAULT']['CHUNK_PATH']
     else:
         CHUNK_PATH = "d:\\tmp\\chunk"
+    BMHWI_FOLDER = os.environ["BMHWI_FOLDER"]
+    if BMHWI_FOLDER != None:
+        BMHWI_FOLDER = BMHWI_FOLDER.replace('"','')
+        if(not os.path.isdir("%s\\Scarlet" % PATH)):
+            PATH = BMHWI_FOLDER
+        if(not os.path.isdir(CHUNK_PATH)):
+            CHUNK_PATH = BMHWI_FOLDER
     res = (config,CHUNK_PATH,PATH)
-    print(res)
+    dbg(res)
     return res

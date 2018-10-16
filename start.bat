@@ -4,8 +4,8 @@ echo "Version: {VERSION}"
 set BLENDER_PATH1="c:\Program Files\Blender Foundation\Blender\blender.exe"
 set BLENDER_PATH2="d:\Program Files\Blender Foundation\Blender\blender.exe"
 set BLENDER_EXE=""
-set FOLDER="%CD%\..\BlenderMhwModelImporter"
-if not exist %FOLDER% (
+set BMHWI_FOLDER="%CD%\..\BlenderMhwModelImporter"
+if not exist %BMHWI_FOLDER% (
 	echo wrong folder name, please rename this folder to: BlenderMhwModelImporter
 	pause
 	exit

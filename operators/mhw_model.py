@@ -1198,16 +1198,18 @@ def checkMeshesForModifiactions(export,i):
         my_id = bm.vertex_layers_int['id']
         
         dbg("Mesh %s has file vertice-count: %d and current vertice-count: %d" % (n,p.VertexCount,len(bm.vertices)))
-        if(p.VertexCount != len(bm.vertices)):
+        
+        faceCount = 0
+        for po in bm.polygons:
+            if(len(po.vertices)==3):
+                faceCount += 1
+            elif(len(po.vertices)==4):
+                faceCount += 2
+            else:
+                raise Exception("Verticecount of %d for face not implemented!" % len(po.vertices))
+        
+        if((p.VertexCount != len(bm.vertices))or(p.FaceCount != faceCount)):
             dbg("need to modify structure because mesh %s has modified verticeCount" % n)
-            faceCount = 0
-            for po in bm.polygons:
-                if(len(po.vertices)==3):
-                    faceCount += 1
-                elif(len(po.vertices)==4):
-                    faceCount += 2
-                else:
-                    raise Exception("Verticecount of %d for face not implemented!" % len(po.vertices))
             reserveVerticesAndFaces(export,headerref,parts,p,len(bm.vertices),faceCount)
             modified = True
     if modified:
