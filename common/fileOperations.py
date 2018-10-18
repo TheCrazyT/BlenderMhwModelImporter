@@ -1,0 +1,256 @@
+import binascii
+from io import BytesIO
+from struct import pack,unpack
+from os import SEEK_SET,SEEK_CUR,SEEK_END
+from ..dbg import dbg
+
+pos = {}
+contentStreams = []
+def getContentStreamValue(fl):
+    return contentStreams[fl].getvalue()
+def createContentStream(content):
+    global contentStreams
+    contentStreams.append(BytesIO(content))
+    return len(contentStreams)-1
+def ReadByte(fl):
+    global pos,contentStreams
+    contentStream = contentStreams[fl]
+    contentStream.seek(pos[fl])
+    res = unpack("B",contentStream.read(1))[0]
+    pos[fl]+=1
+    return res
+def ReadBytes(fl,l):
+    global pos,contentStreams
+    contentStream = contentStreams[fl]
+    contentStream.seek(pos[fl])
+    res = unpack("%sB" % l,contentStream.read(l))[0]
+    pos[fl]+=l
+    return res
+def ReadLong(fl):
+    global pos,contentStreams
+    contentStream = contentStreams[fl]
+    contentStream.seek(pos[fl])
+    res = unpack("I",contentStream.read(4))[0]
+    pos[fl]+=4
+    return res
+def ReadShort(fl):
+    global pos,contentStreams
+    contentStream = contentStreams[fl]
+    contentStream.seek(pos[fl])
+    res = unpack("H",contentStream.read(2))[0]
+    pos[fl]+=2
+    return res
+def ReadBELong(fl):
+    global pos,contentStreams
+    contentStream = contentStreams[fl]
+    contentStream.seek(pos[fl])
+    res = unpack(">I",contentStream.read(4))[0]
+    pos[fl]+=4
+    return res
+def ReadBEShort(fl):
+    global pos,contentStreams
+    contentStream = contentStreams[fl]
+    contentStream.seek(pos[fl])
+    res = unpack(">H",contentStream.read(2))[0]
+    pos[fl]+=2
+    return res
+    
+#copied this code from http://davidejones.com/blog/1413-python-precision-floating-point/
+def _wrhf(float32):
+    F16_EXPONENT_BITS = 0x1F
+    F16_EXPONENT_SHIFT = 10
+    F16_EXPONENT_BIAS = 15
+    F16_MANTISSA_BITS = 0x3ff
+    F16_MANTISSA_SHIFT =  (23 - F16_EXPONENT_SHIFT)
+    F16_MAX_EXPONENT =  (F16_EXPONENT_BITS << F16_EXPONENT_SHIFT)
+
+    a = pack('>f',float32)
+    b = binascii.hexlify(a)
+
+    f32 = int(b,16)
+    f16 = 0
+    sign = (f32 >> 16) & 0x8000
+    exponent = ((f32 >> 23) & 0xff) - 127
+    mantissa = f32 & 0x007fffff
+            
+    if exponent == 128:
+        f16 = sign | F16_MAX_EXPONENT
+        if mantissa:
+            f16 |= (mantissa & F16_MANTISSA_BITS)
+    elif exponent > 15:
+        f16 = sign | F16_MAX_EXPONENT
+    elif exponent > -15:
+        exponent += F16_EXPONENT_BIAS
+        mantissa >>= F16_MANTISSA_SHIFT
+        f16 = sign | exponent << F16_EXPONENT_SHIFT | mantissa
+    else:
+        f16 = sign
+    return f16
+def _rdhf(float16):
+        s = int((float16 >> 15) & 0x00000001)    # sign
+        e = int((float16 >> 10) & 0x0000001f)    # exponent
+        f = int(float16 & 0x000003ff)            # fraction
+
+        if e == 0:
+            if f == 0:
+                return int(s << 31)
+            else:
+                while not (f & 0x00000400):
+                    f = f << 1
+                    e -= 1
+                e += 1
+                f &= ~0x00000400
+                #print(s,e,f)
+        elif e == 31:
+            if f == 0:
+                return int((s << 31) | 0x7f800000)
+            else:
+                return int((s << 31) | 0x7f800000 | (f << 13))
+
+        e = e + (127 -15)
+        f = f << 13
+        return unpack('f',pack('I',int((s << 31) | (e << 23) | f)))[0]
+
+def Read8s(fl):
+    return ReadByte(fl)*0.0078125
+def ReadHalfFloat(fl):
+    s = ReadShort(fl)
+    res = _rdhf(s)
+    #dbg("S: %08x R: %f" % (s,res))
+    return res
+def ReadFloat(fl):
+    global pos,contentStreams
+    contentStream = contentStreams[fl]
+    contentStream.seek(pos[fl])
+    res = unpack("f",contentStream.read(4))[0]
+    pos[fl]+=4
+    return res
+def ReadBEFloat(fl):
+    global pos,contentStreams
+    contentStream = contentStreams[fl]
+    contentStream.seek(pos[fl])
+    res = unpack(">f",contentStream.read(4))[0]
+    pos[fl]+=4
+    return res
+def ReadPointer(fl,size):
+    global pos,contentStreams
+    contentStream = contentStreams[fl]
+    if(size==64):
+        contentStream.seek(pos[fl])
+        res = unpack("Q",contentStream.read(8))[0]
+        pos[fl]+=8
+        return res
+    return None
+    
+def ReadBEVector3(fl):
+    global pos,contentStreams
+    contentStream = contentStreams[fl]
+    contentStream.seek(pos[fl])
+    res = unpack(">fff",contentStream.read(4*3))
+    pos[fl]+=4*3
+    return list(res)
+def ReadVector3(fl):
+    global pos,contentStreams
+    contentStream = contentStreams[fl]
+    contentStream.seek(pos[fl])
+    res = unpack("fff",contentStream.read(4*3))
+    pos[fl]+=4*3
+    return list(res)
+    
+def ReadBEVector4(fl):
+    global pos,contentStreams
+    contentStream = contentStreams[fl]
+    contentStream.seek(pos[fl])
+    res = unpack(">ffff",contentStream.read(4*4))
+    pos[fl]+=4*4
+    return list(res)
+def ReadVector4(fl):
+    global pos,contentStreams
+    contentStream = contentStreams[fl]
+    contentStream.seek(pos[fl])
+    res = unpack("ffff",contentStream.read(4*4))
+    pos[fl]+=4*4
+    return list(res)
+
+def WriteHalfFloats(fl,floats32):
+    global pos,contentStreams
+    contentStream = contentStreams[fl]
+    p = b''
+    for f in floats32:
+        f16 = _wrhf(f)
+        p += pack("<H",f16)
+    contentStream.seek(pos[fl])
+    contentStream.write(p)
+    pos[fl] += 2*len(floats32)
+def WriteFloats(fl,floats):
+    global pos,contentStreams
+    contentStream = contentStreams[fl]
+    #dbg("WriteFloats at 0x%08x %s" % (pos[fl],floats))
+    if pos[fl]==0:
+        raise Exception("Invalid write position")
+    p = pack("%df" % len(floats),*floats)
+    contentStream.seek(pos[fl])
+    contentStream.write(p)
+    pos[fl] += len(floats)*4
+def WriteBytes(fl,bytes):
+    global pos,contentStreams
+    contentStream = contentStreams[fl]
+    #dbg("WriteBytes at 0x%08x %s" % (pos[fl],bytes))
+    if pos[fl]==0:
+        raise Exception("Invalid write position")
+    p = pack("%dB" % len(bytes),*bytes)
+    contentStream.seek(pos[fl])
+    contentStream.write(p)
+    pos[fl] += len(bytes)
+def WriteShorts(fl,shorts):
+    global pos,contentStreams
+    contentStream = contentStreams[fl]
+    if pos[fl]==0:
+        raise Exception("Invalid write position")
+    p = pack("%dH" % len(shorts),*shorts)
+    contentStream.seek(pos[fl])
+    contentStream.write(p)
+    pos[fl] += len(shorts)*2
+
+def WriteLongs(fl,longs):
+    global pos,contentStreams
+    contentStream = contentStreams[fl]
+    #dbg("WriteLongs at 0x%08x %s %d" % (pos[fl],longs,len(longs)))
+    if pos[fl]<=0:
+        raise Exception("Invalid write position %d" % pos[fl])
+    p = pack("%dL" % len(longs),*longs)
+    contentStream.seek(pos[fl])
+    contentStream.write(p)
+    pos[fl] += len(longs)*4
+def getPos(fl):
+    if pos[fl] < 0 :
+        raise Exception("invalid pos detected! [%d]" % pos[fl])
+    if pos[fl] > 0x100000000 :
+        raise Exception("invalid pos detected! [%d]" % pos[fl])
+    return pos[fl]
+def InsertEmptyBytes(fl,offset,count):
+    global pos,contentStreams
+    contentStream = contentStreams[fl]
+    dbg("InsertEmptyBytes %08x %d" % (offset,count))
+    contentStream2 = BytesIO(b'')
+    contentStream.seek(0)
+    contentStream2.write(contentStream.read(offset))
+    contentStream2.write(b'\0'*count)
+    contentStream2.write(contentStream.read())
+    contentStreams[fl] = contentStream2
+def DeleteBytes(fl,offset,count):
+    global pos,contentStreams
+    contentStream = contentStreams[fl]
+    dbg("DeleteBytes %08x %d" % (offset,count))
+    contentStream2 = BytesIO(b'')
+    contentStream.seek(0)
+    contentStream2.write(contentStream.read(offset))
+    contentStream.seek(count,SEEK_CUR)
+    contentStream2.write(contentStream.read())
+    contentStreams[fl] = contentStream2
+def Seek(fl,offset):
+    global pos
+    pos[fl]=offset
+def fseek(fl,roffset):
+    global pos
+    pos[fl]+=roffset

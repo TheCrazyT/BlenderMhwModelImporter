@@ -48,7 +48,9 @@ def initConfig():
         CHUNK_PATH = config['DEFAULT']['CHUNK_PATH']
     else:
         CHUNK_PATH = "d:\\tmp\\chunk"
-    BMHWI_FOLDER = os.environ["BMHWI_FOLDER"]
+    BMHWI_FOLDER = None
+    if "BMHWI_FOLDER" in os.environ:
+        BMHWI_FOLDER = os.environ["BMHWI_FOLDER"]
     if BMHWI_FOLDER != None:
         BMHWI_FOLDER = BMHWI_FOLDER.replace('"','')
         if(not os.path.isdir("%s\\Scarlet" % PATH)):

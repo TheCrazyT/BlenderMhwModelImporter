@@ -17,6 +17,17 @@ Quick install instructions:
   
   Make shure that "Import-Export: MHW Model Importer" in the user-preferences window under the section "add-ons" is checked.
 
+
+18.10.2018:
+
+Fixing annoying weight bug (weight information lost on import).
+On faces it created a weird problem of skin moving slow with the animation itself.
+
+Also:
+Restructurized code.
+Fixed bug with install.  
+  
+  
 14.10.2018:
 
 Trying to remove vertex-count limit.

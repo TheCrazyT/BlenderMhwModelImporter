@@ -1,9 +1,9 @@
 #Ported to blender from "MT Framework tools" https://www.dropbox.com/s/4ufvrgkdsioe3a6/MT%20Framework.mzp?dl=0 
 #(https://lukascone.wordpress.com/2017/06/18/mt-framework-tools/)
 
-WEIGHTS3_BONES4 = 1
-WEIGHTS7_BONES8 = 2
-WEIGHTS0_BONES0 = 3
+
+#constants
+x64 = 64
 
 FMT_BONE="Bone.%04d"
 
@@ -24,10 +24,11 @@ ENUM_LAYER_MODE_NONE = (LAYER_MODE_NONE,'None', '')
 ENUM_LAYER_MODE_PARTS = (LAYER_MODE_PARTS,'mesh parts','Try to move mesh parts evenly accross the layers')
 ENUM_LAYER_MODE_LOD = (LAYER_MODE_LOD,'lod-level','Try group mesh parts based on their lod-level evenly accross the layers')
 
+
+
 content = bytes("","UTF-8")
 contentStream = None
 
-from io import BytesIO
 import binascii
 import mathutils 
 import math
@@ -37,7 +38,6 @@ import bpy
 import bmesh
 import os
 import configparser
-from os import SEEK_SET,SEEK_CUR,SEEK_END
 from bpy_extras.io_utils import ImportHelper
 from bpy.props import StringProperty, BoolProperty, EnumProperty, IntProperty
 from bpy.types import Operator
@@ -45,16 +45,12 @@ from mathutils import Vector, Matrix, Euler
 from struct import unpack, pack
 from ..config import writeConfig, initConfig, setInstallPath, setChunkPath
 from ..dbg import dbg
-
-x64=64
+from ..vertexbuffers.mhw import *
+from ..common.fileOperations import *
+from ..common.constants import *
 
 (config,CHUNK_PATH,PATH) = initConfig()
 
-WEIGHT_MULTIPLIER = 0.000977517
-WEIGHT_MULTIPLIER2 = 0.25
-BIT_LENGTH_10 = 0x3ff
-def proxima(value1,value2=0,epsilon=0.0001):
-    return (value1 <= (value2+epsilon)) and (value1 >= (value2-epsilon))
 
 
 class matrix3:
@@ -78,565 +74,10 @@ def readmatrix44(headerref):
         mtx.col4 = ReadVector4(headerref.fl)
     return mtx
 
-def calcBonesAndWeightsArr(cnt,weights,bones):
-    weightArrResult = []
-    boneArrResult = []
-    cwt = []
-    cbn = []
-    for b in range(0,cnt):
-        if (weights[b]>0) and not proxima(weights[b]):
-            try:
-                fitem = cbn.index(bones[b])
-            except:
-                fitem = -1
-            if fitem > -1:
-                cwt[fitem] += weights[b]
-            else:
-                cbn.append(bones[b])
-                cwt.append(weights[b])
-    return (cwt,cbn)
 
-def calcBonesAndWeights(cnt,weightVal,weightVal2,bns):
-    global WEIGHT_MULTIPLIER
-    wt = []
-    wt.append((weightVal & BIT_LENGTH_10)*WEIGHT_MULTIPLIER)
-    wt.append(((weightVal>>10) & BIT_LENGTH_10)*WEIGHT_MULTIPLIER)
-    wt.append(((weightVal>>20) & BIT_LENGTH_10)*WEIGHT_MULTIPLIER)
-    
-    if cnt > 4:
-        wt.append((weightVal2[0]) * WEIGHT_MULTIPLIER2)
-        wt.append((weightVal2[0]) * WEIGHT_MULTIPLIER2)
-        wt.append((weightVal2[0]) * WEIGHT_MULTIPLIER2)
-        wt.append((weightVal2[0]) * WEIGHT_MULTIPLIER2)
-        wt.append(1 - wt[0] - wt[1] - wt[2] - wt[3] - wt[4] - wt[5]- wt[6])
-        if wt[7] < 0:
-            wt[7] = 0
-    else:
-        wt.append(1 - wt[0] - wt[1] - wt[2])
-
-    
-    return calcBonesAndWeightsArr(cnt,wt,bns)
 
 
     
-################################################################ Vertex Buffers
-# TODO: move this shit to separate file
-
-def basicAppendEmptyVertices(cls,fl,VertexOffset,oldVertexCount,addVertexCount):
-    dbg("basicAppendEmptyVertices %08x %d %d" % (VertexOffset,oldVertexCount,addVertexCount))
-    if(addVertexCount > 0):
-        InsertEmptyBytes(fl,VertexOffset+oldVertexCount*cls.getStructSize(),cls.getStructSize()*addVertexCount)
-    elif(addVertexCount < 0):
-        subVertexCount = 0-addVertexCount
-        DeleteBytes(fl,VertexOffset+(oldVertexCount-subVertexCount)*cls.getStructSize(),cls.getStructSize()*subVertexCount)
-
-class MODVertexBuffer818904dc:
-    def __init__(self,headerref,vertexcount):
-        dbg("MODVertexBuffer818904dc %d" % vertexcount)
-        self.vertarray   = []
-        self.uvs         = []
-        self.weights     = []
-        self.bones       = []
-        self.headerref   = headerref
-        self.vertexcount = vertexcount
-        for i in range(0,vertexcount):
-            if headerref.bendian:
-                self.vertarray.append([ReadBEFloat(headerref.fl),ReadBEFloat(headerref.fl),ReadBEFloat(headerref.fl)])
-            else:
-                self.vertarray.append([ReadFloat(headerref.fl),ReadFloat(headerref.fl),ReadFloat(headerref.fl)])
-            Read8s(headerref.fl)
-            Read8s(headerref.fl)
-            Read8s(headerref.fl)
-            ReadByte(headerref.fl)
-            ReadLong(headerref.fl)
-            self.uvs.append((ReadHalfFloat(headerref.fl),1-ReadHalfFloat(headerref.fl)))
-            ReadLong(headerref.fl)
-    @staticmethod
-    def getStructSize():
-        return 4+4+4+1+1+1+1+4+2+2+4
-    @staticmethod
-    def getUVOFFAfterVert():
-        return 1+1+1+1+4
-    @staticmethod
-    def getWeightsOFFAfterUVOFF():
-        return -1
-    @staticmethod
-    def getBonesOFFAfterWeightsOFF():
-        return -1
-    @classmethod
-    def appendEmptyVertices(cls,fl,VertexOffset,oldVertexCount,addVertexCount):
-        basicAppendEmptyVertices(cls,fl,VertexOffset,oldVertexCount,addVertexCount)
-
-class MODVertexBufferf06033f:
-    def __init__(self,headerref,vertexcount):
-        dbg("MODVertexBufferf06033f %d" % vertexcount)
-        self.vertarray   = []
-        self.uvs         = []
-        self.weights     = []
-        self.bones       = []
-        self.headerref   = headerref
-        self.vertexcount = vertexcount
-        for i in range(0,vertexcount):
-            if headerref.bendian:
-                self.vertarray.append([ReadBEFloat(headerref.fl),ReadBEFloat(headerref.fl),ReadBEFloat(headerref.fl)])
-            else:
-                self.vertarray.append([ReadFloat(headerref.fl),ReadFloat(headerref.fl),ReadFloat(headerref.fl)])
-            Read8s(headerref.fl)
-            Read8s(headerref.fl)
-            Read8s(headerref.fl)
-            ReadByte(headerref.fl)
-            ReadLong(headerref.fl)
-            self.uvs.append((ReadHalfFloat(headerref.fl),1-ReadHalfFloat(headerref.fl)))
-            wts = ReadLong(headerref.fl)
-            bns = [ReadByte(headerref.fl),ReadByte(headerref.fl),ReadByte(headerref.fl),ReadByte(headerref.fl)]
-            [weights,bones] = calcBonesAndWeights(4,wts,[],bns)
-            self.weights.append(weights)
-            self.bones.append(bones)
-    @staticmethod
-    def getStructSize():
-        return 4+4+4+1+1+1+1+4+2+2+4+1+ 1+1+1
-    @staticmethod
-    def getUVOFFAfterVert():
-        return 1+1+1+1+4
-    @staticmethod
-    def getWeightsOFFAfterUVOFF():
-        return 0
-    @staticmethod
-    def getBonesOFFAfterWeightsOFF():
-        return 0
-    @staticmethod
-    def getBoneMode():
-        return WEIGHTS3_BONES4
-    @classmethod
-    def appendEmptyVertices(cls,fl,VertexOffset,oldVertexCount,addVertexCount):
-        basicAppendEmptyVertices(cls,fl,VertexOffset,oldVertexCount,addVertexCount)
-       
-class MODVertexBuffer81f58067:
-    def __init__(self,headerref,vertexcount):
-        dbg("MODVertexBuffer81f58067 %d" % vertexcount)
-        self.vertarray   = []
-        self.uvs         = []
-        self.weights     = []
-        self.bones       = []
-        self.headerref   = headerref
-        self.vertexcount = vertexcount
-        for i in range(0,vertexcount):
-            if headerref.bendian:
-                self.vertarray.append([ReadBEFloat(headerref.fl),ReadBEFloat(headerref.fl),ReadBEFloat(headerref.fl)])
-            else:
-                self.vertarray.append([ReadFloat(headerref.fl),ReadFloat(headerref.fl),ReadFloat(headerref.fl)])
-            Read8s(headerref.fl)
-            Read8s(headerref.fl)
-            Read8s(headerref.fl)
-            ReadByte(headerref.fl)
-            ReadLong(headerref.fl)
-            self.uvs.append((ReadHalfFloat(headerref.fl),1-ReadHalfFloat(headerref.fl)))
-            wts = ReadLong(headerref.fl)
-            wts2 = [ReadByte(headerref.fl),ReadByte(headerref.fl),ReadByte(headerref.fl),ReadByte(headerref.fl)]            
-            bns = [ReadByte(headerref.fl),ReadByte(headerref.fl),ReadByte(headerref.fl),ReadByte(headerref.fl),
-                ReadByte(headerref.fl),ReadByte(headerref.fl),ReadByte(headerref.fl),ReadByte(headerref.fl)]
-            [weights,bones] = calcBonesAndWeights(8,wts,wts2,bns)
-            self.weights.append(weights)
-            self.bones.append(bones)
-
-    @staticmethod
-    def getStructSize():
-        return 4+4+4+1+1+1+1+4+2+2+4+1+1+1+1+1 +1+1+1+1+1+1+1
-    @staticmethod
-    def getUVOFFAfterVert():
-        return 1+1+1+1+4
-    @staticmethod
-    def getWeightsOFFAfterUVOFF():
-        return 0
-    @staticmethod
-    def getBonesOFFAfterWeightsOFF():
-        return 0
-    @staticmethod
-    def getBoneMode():
-        return WEIGHTS7_BONES8
-    @classmethod
-    def appendEmptyVertices(cls,fl,VertexOffset,oldVertexCount,addVertexCount):
-        basicAppendEmptyVertices(cls,fl,VertexOffset,oldVertexCount,addVertexCount)
-      
-class MODVertexBufferf471fe45:
-    def __init__(self,headerref,vertexcount):
-        dbg("MODVertexBufferf471fe45 %d" % vertexcount)
-        self.vertarray   = []
-        self.uvs         = []
-        self.uvs2        = []
-        self.weights     = []
-        self.bones       = []
-        self.headerref   = headerref
-        self.vertexcount = vertexcount
-        for i in range(0,vertexcount):
-            if headerref.bendian:
-                self.vertarray.append([ReadBEFloat(headerref.fl),ReadBEFloat(headerref.fl),ReadBEFloat(headerref.fl)])
-            else:
-                self.vertarray.append([ReadFloat(headerref.fl),ReadFloat(headerref.fl),ReadFloat(headerref.fl)])
-            Read8s(headerref.fl)
-            Read8s(headerref.fl)
-            Read8s(headerref.fl)
-            ReadByte(headerref.fl)
-            ReadLong(headerref.fl)
-            self.uvs.append((ReadHalfFloat(headerref.fl),1-ReadHalfFloat(headerref.fl)))
-            self.uvs2.append((ReadHalfFloat(headerref.fl),1-ReadHalfFloat(headerref.fl)))
-            wts = ReadLong(headerref.fl)
-            bns = [ReadByte(headerref.fl),ReadByte(headerref.fl),ReadByte(headerref.fl),ReadByte(headerref.fl)]
-            [weights,bones] = calcBonesAndWeights(4,wts,[],bns)
-            self.weights.append(weights)
-            self.bones.append(bones)
-    @staticmethod
-    def getStructSize():
-        return 4+4+4+1+1+1+1+4+2+2+2+2+4+1+1+1+1
-    @staticmethod
-    def getUVOFFAfterVert():
-        return 1+1+1+1+4
-    @staticmethod
-    def getWeightsOFFAfterUVOFF():
-        return 0
-    @staticmethod
-    def getBonesOFFAfterWeightsOFF():
-        return 0
-    @staticmethod
-    def getBoneMode():
-        return WEIGHTS3_BONES4
-    @classmethod
-    def appendEmptyVertices(cls,fl,VertexOffset,oldVertexCount,addVertexCount):
-        basicAppendEmptyVertices(cls,fl,VertexOffset,oldVertexCount,addVertexCount)
-
-class MODVertexBuffer3c730760:
-    def __init__(self,headerref,vertexcount):
-        dbg("MODVertexBuffer3c730760 %d" % vertexcount)
-        self.vertarray   = []
-        self.uvs         = []
-        self.weights     = []
-        self.bones       = []
-        self.headerref   = headerref
-        self.vertexcount = vertexcount
-        for i in range(0,vertexcount):
-            if headerref.bendian:
-                self.vertarray.append([ReadBEFloat(headerref.fl),ReadBEFloat(headerref.fl),ReadBEFloat(headerref.fl)])
-            else:
-                self.vertarray.append([ReadFloat(headerref.fl),ReadFloat(headerref.fl),ReadFloat(headerref.fl)])
-            Read8s(headerref.fl)
-            Read8s(headerref.fl)
-            Read8s(headerref.fl)
-            ReadByte(headerref.fl)
-            ReadLong(headerref.fl)
-            self.uvs.append((ReadHalfFloat(headerref.fl),1-ReadHalfFloat(headerref.fl)))
-            wts = ReadLong(headerref.fl)
-            bns = [ReadByte(headerref.fl),ReadByte(headerref.fl),ReadByte(headerref.fl),ReadByte(headerref.fl)]
-            [weights,bones] = calcBonesAndWeights(4,wts,[],bns)
-            self.weights.append(weights)
-            self.bones.append(bones)
-            
-            ReadByte(headerref.fl)
-            
-            ReadByte(headerref.fl)
-            ReadByte(headerref.fl)
-            ReadByte(headerref.fl)
-    @staticmethod
-    def getStructSize():
-        return 4+4+4+1+1+1+1+4+2+2+4+1+1+1+1+1+1+1+1
-    @staticmethod
-    def getUVOFFAfterVert():
-        return 1+1+1+1+4
-    @staticmethod
-    def getWeightsOFFAfterUVOFF():
-        return 0
-    @staticmethod
-    def getBonesOFFAfterWeightsOFF():
-        return 0      
-    @staticmethod
-    def getBoneMode():
-        return WEIGHTS3_BONES4
-    @classmethod
-    def appendEmptyVertices(cls,fl,VertexOffset,oldVertexCount,addVertexCount):
-        basicAppendEmptyVertices(cls,fl,VertexOffset,oldVertexCount,addVertexCount)
-
-class MODVertexBufferb2fc0083:
-    def __init__(self,headerref,vertexcount):
-        dbg("MODVertexBufferb2fc0083 %d" % vertexcount)
-        raise Exception("ToDo")
-        self.vertarray   = []
-        self.uvs         = []
-        self.weights     = []
-        self.bones       = []
-        self.headerref   = headerref
-        self.vertexcount = vertexcount
-        for i in range(0,vertexcount):
-            if headerref.bendian:
-                self.vertarray.append([ReadBEFloat(headerref.fl),ReadBEFloat(headerref.fl),ReadBEFloat(headerref.fl)])
-            else:
-                self.vertarray.append([ReadFloat(headerref.fl),ReadFloat(headerref.fl),ReadFloat(headerref.fl)])
-            Read8s(headerref.fl)
-            Read8s(headerref.fl)
-            Read8s(headerref.fl)
-            ReadByte(headerref.fl)
-            ReadLong(headerref.fl)
-            self.uvs.append((ReadHalfFloat(headerref.fl),1-ReadHalfFloat(headerref.fl)))
-            ReadLong(headerref.fl)
-    @staticmethod
-    def getStructSize():
-        return 4+4+4+1+1+1+1+4+2+2+4
-    @staticmethod
-    def getUVOFFAfterVert():
-        return 1+1+1+1+4
-    @staticmethod
-    def getWeightsOFFAfterUVOFF():
-        return -1
-    @staticmethod
-    def getBonesOFFAfterWeightsOFF():
-        return -1
-    @staticmethod
-    def getBoneMode():
-        return WEIGHTS0_BONES0
-    @classmethod
-    def appendEmptyVertices(cls,fl,VertexOffset,oldVertexCount,addVertexCount):
-        basicAppendEmptyVertices(cls,fl,VertexOffset,oldVertexCount,addVertexCount)
-       
-class MODVertexBuffer366995a7:
-    def __init__(self,headerref,vertexcount):
-        dbg("MODVertexBuffer366995a7 %d" % vertexcount)
-        self.vertarray   = []
-        self.uvs         = []
-        self.weights     = []
-        self.bones       = []
-        self.headerref   = headerref
-        self.vertexcount = vertexcount
-        for i in range(0,vertexcount):
-            if headerref.bendian:
-                self.vertarray.append([ReadBEFloat(headerref.fl),ReadBEFloat(headerref.fl),ReadBEFloat(headerref.fl)])
-            else:
-                self.vertarray.append([ReadFloat(headerref.fl),ReadFloat(headerref.fl),ReadFloat(headerref.fl)])
-            Read8s(headerref.fl)
-            Read8s(headerref.fl)
-            Read8s(headerref.fl)
-            ReadByte(headerref.fl)
-            ReadLong(headerref.fl)
-            self.uvs.append((ReadHalfFloat(headerref.fl),1-ReadHalfFloat(headerref.fl)))
-            wts = ReadLong(headerref.fl)
-            wts2 = [ReadByte(headerref.fl),ReadByte(headerref.fl),ReadByte(headerref.fl),ReadByte(headerref.fl)]            
-            bns = [ReadByte(headerref.fl),ReadByte(headerref.fl),ReadByte(headerref.fl),ReadByte(headerref.fl),
-                ReadByte(headerref.fl),ReadByte(headerref.fl),ReadByte(headerref.fl),ReadByte(headerref.fl)]
-            [weights,bones] = calcBonesAndWeights(8,wts,wts2,bns)
-            self.weights.append(weights)
-            self.bones.append(bones)
-            ReadLong(headerref.fl)
-    @staticmethod
-    def getStructSize():
-        return 4+4+4+1+1+1+1+4+2+2+4+1+1+1+1 + 8+4
-    @staticmethod
-    def getUVOFFAfterVert():
-        return 1+1+1+1+4
-    @staticmethod
-    def getWeightsOFFAfterUVOFF():
-        return 0
-    @staticmethod
-    def getBonesOFFAfterWeightsOFF():
-        return 0
-    @staticmethod
-    def getBoneMode():
-        return WEIGHTS7_BONES8
-    @classmethod
-    def appendEmptyVertices(cls,fl,VertexOffset,oldVertexCount,addVertexCount):
-        basicAppendEmptyVertices(cls,fl,VertexOffset,oldVertexCount,addVertexCount)
-        
-class MODVertexBufferc9690ab8:
-    def __init__(self,headerref,vertexcount):
-        dbg("MODVertexBufferc9690ab8 %d" % vertexcount)
-        raise Exception("ToDo")
-        self.vertarray   = []
-        self.uvs         = []
-        self.weights     = []
-        self.bones       = []
-        self.headerref   = headerref
-        self.vertexcount = vertexcount
-        for i in range(0,vertexcount):
-            if headerref.bendian:
-                self.vertarray.append([ReadBEFloat(headerref.fl),ReadBEFloat(headerref.fl),ReadBEFloat(headerref.fl)])
-            else:
-                self.vertarray.append([ReadFloat(headerref.fl),ReadFloat(headerref.fl),ReadFloat(headerref.fl)])
-            Read8s(headerref.fl)
-            Read8s(headerref.fl)
-            Read8s(headerref.fl)
-            ReadByte(headerref.fl)
-            ReadLong(headerref.fl)
-            ReadHalfFloat(headerref.fl)
-            ReadHalfFloat(headerref.fl)
-            ReadHalfFloat(headerref.fl)
-            ReadHalfFloat(headerref.fl)
-            ReadByte(headerref.fl)
-            ReadByte(headerref.fl)
-            ReadByte(headerref.fl)
-            ReadByte(headerref.fl)
-            
-            ReadByte(headerref.fl)
-            ReadByte(headerref.fl)
-            ReadByte(headerref.fl)
-            ReadByte(headerref.fl)
-            ReadByte(headerref.fl)
-            ReadByte(headerref.fl)
-            ReadByte(headerref.fl)
-            ReadByte(headerref.fl)
-    @staticmethod
-    def getStructSize():
-        return 4+4+4+1+1+1+1+4+2+2+2+2+1+1+1+1 +1+1+1+1+1+1+1+1
-    @staticmethod
-    def getUVOFFAfterVert():
-        return 1+1+1+1+4
-    @staticmethod
-    def getWeightsOFFAfterUVOFF():
-        return -1
-    @staticmethod
-    def getBonesOFFAfterWeightsOFF():
-        return -1
-    @staticmethod
-    def getBoneMode():
-        return WEIGHTS7_BONES8
-    @classmethod
-    def appendEmptyVertices(cls,fl,VertexOffset,oldVertexCount,addVertexCount):
-        basicAppendEmptyVertices(cls,fl,VertexOffset,oldVertexCount,addVertexCount)
-        
-class MODVertexBuffer5e7f202d:
-    def __init__(self,headerref,vertexcount):
-        dbg("MODVertexBuffer5e7f202d %d" % vertexcount)
-        raise Exception("ToDo")
-        self.vertarray   = []
-        self.uvs         = []
-        self.weights     = []
-        self.bones       = []
-        self.headerref   = headerref
-        self.vertexcount = vertexcount
-        for i in range(0,vertexcount):
-            if headerref.bendian:
-                self.vertarray.append([ReadBEFloat(headerref.fl),ReadBEFloat(headerref.fl),ReadBEFloat(headerref.fl)])
-            else:
-                self.vertarray.append([ReadFloat(headerref.fl),ReadFloat(headerref.fl),ReadFloat(headerref.fl)])
-            Read8s(headerref.fl)
-            Read8s(headerref.fl)
-            Read8s(headerref.fl)
-            ReadByte(headerref.fl)
-            ReadLong(headerref.fl)
-            self.uvs.append((ReadHalfFloat(headerref.fl),1-ReadHalfFloat(headerref.fl)))
-            ReadLong(headerref.fl)
-    @staticmethod
-    def getStructSize():
-        return 4+4+4+1+1+1+1+4+2+2+4
-    @staticmethod
-    def getUVOFFAfterVert():
-        return 1+1+1+1+4
-    @staticmethod
-    def getWeightsOFFAfterUVOFF():
-        return -1
-    @staticmethod
-    def getBonesOFFAfterWeightsOFF():
-        return -1
-    @staticmethod
-    def getBoneMode():
-        return WEIGHTS0_BONES0
-    @classmethod
-    def appendEmptyVertices(cls,fl,VertexOffset,oldVertexCount,addVertexCount):
-        basicAppendEmptyVertices(cls,fl,VertexOffset,oldVertexCount,addVertexCount)
-       
-class MODVertexBufferd829702c:
-    def __init__(self,headerref,vertexcount):
-        dbg("MODVertexBufferd829702c %d" % vertexcount)
-        self.vertarray   = []
-        self.uvs         = []
-        self.weights     = []
-        self.bones       = []
-        self.headerref   = headerref
-        self.vertexcount = vertexcount
-        for i in range(0,vertexcount):
-            if headerref.bendian:
-                self.vertarray.append([ReadBEFloat(headerref.fl),ReadBEFloat(headerref.fl),ReadBEFloat(headerref.fl)])
-            else:
-                self.vertarray.append([ReadFloat(headerref.fl),ReadFloat(headerref.fl),ReadFloat(headerref.fl)])
-            Read8s(headerref.fl)
-            Read8s(headerref.fl)
-            Read8s(headerref.fl)
-            ReadByte(headerref.fl)
-            ReadLong(headerref.fl)
-            self.uvs.append((ReadHalfFloat(headerref.fl),1-ReadHalfFloat(headerref.fl)))
-    @staticmethod
-    def getStructSize():
-        return 4+4+4+1+1+1+1+4+2+2
-    @staticmethod
-    def getUVOFFAfterVert():
-        return 1+1+1+1+4
-    @staticmethod
-    def getWeightsOFFAfterUVOFF():
-        return -1
-    @staticmethod
-    def getBonesOFFAfterWeightsOFF():
-        return -1
-    @staticmethod
-    def getBoneMode():
-        return WEIGHTS0_BONES0  
-    @classmethod
-    def appendEmptyVertices(cls,fl,VertexOffset,oldVertexCount,addVertexCount):
-        basicAppendEmptyVertices(cls,fl,VertexOffset,oldVertexCount,addVertexCount)
-        
-class MODVertexBufferb8e69244:
-    def __init__(self,headerref,vertexcount):
-        dbg("MODVertexBufferd829702c %d" % vertexcount)
-        self.vertarray   = []
-        self.uvs         = []
-        self.weights     = []
-        self.bones       = []
-        self.headerref   = headerref
-        self.vertexcount = vertexcount
-        for i in range(0,vertexcount):
-            if headerref.bendian:
-                self.vertarray.append([ReadBEFloat(headerref.fl),ReadBEFloat(headerref.fl),ReadBEFloat(headerref.fl)])
-            else:
-                self.vertarray.append([ReadFloat(headerref.fl),ReadFloat(headerref.fl),ReadFloat(headerref.fl)])
-            Read8s(headerref.fl)
-            Read8s(headerref.fl)
-            Read8s(headerref.fl)
-            ReadByte(headerref.fl)
-            ReadLong(headerref.fl)
-            self.uvs.append((ReadHalfFloat(headerref.fl),1-ReadHalfFloat(headerref.fl)))
-            wts = ReadLong(headerref.fl)
-            wts2 = [ReadByte(headerref.fl),ReadByte(headerref.fl),ReadByte(headerref.fl),ReadByte(headerref.fl)]            
-            bns = [ReadByte(headerref.fl),ReadByte(headerref.fl),ReadByte(headerref.fl),ReadByte(headerref.fl),
-                ReadByte(headerref.fl),ReadByte(headerref.fl),ReadByte(headerref.fl),ReadByte(headerref.fl)]
-            [weights,bones] = calcBonesAndWeights(8,wts,wts2,bns)
-            self.weights.append(weights)
-            self.bones.append(bones)
-
-            ReadLong(headerref.fl)
-            
-            ReadByte(headerref.fl)
-            ReadByte(headerref.fl)
-            ReadByte(headerref.fl)
-            ReadByte(headerref.fl)
-            
-    @staticmethod
-    def getStructSize():
-        return 4+4+4+1+1+1+1+4+2+2+4+1+1+1+1+1*8+4 +1+1+1+1
-    @staticmethod
-    def getUVOFFAfterVert():
-        return 1+1+1+1+4
-    @staticmethod
-    def getWeightsOFFAfterUVOFF():
-        return 0
-    @staticmethod
-    def getBonesOFFAfterWeightsOFF():
-        return 0
-    @staticmethod
-    def getBoneMode():
-        return WEIGHTS7_BONES8
-    @classmethod
-    def appendEmptyVertices(cls,fl,VertexOffset,oldVertexCount,addVertexCount):
-        basicAppendEmptyVertices(cls,fl,VertexOffset,oldVertexCount,addVertexCount)
-
-MODVertexBuffera5104ca0 = MODVertexBuffer5e7f202d
-MODVertexBufferf637401c = MODVertexBufferf06033f
-MODVertexBuffera756f2f9 = MODVertexBufferd829702c
-
-################################################################ END Vertex Buffers
 #TODO, rename me
 class UnknS2:
     def __init__(self,fl,ui):
@@ -666,230 +107,6 @@ class Material:
         self.startAddr = ReadLong(fl)
         self.unkn6 = ReadLong(fl)
 
-#TODO consequently use contentStream instead of pos/fl/content
-pos = {}
-
-def ReadByte(fl):
-    global pos,contentStream
-    contentStream.seek(pos[fl])
-    res = unpack("B",contentStream.read(1))[0]
-    pos[fl]+=1
-    return res
-def ReadBytes(fl,l):
-    global pos,contentStream
-    contentStream.seek(pos[fl])
-    res = unpack("%sB" % l,contentStream.read(l))[0]
-    pos[fl]+=l
-    return res
-def ReadLong(fl):
-    global pos,contentStream
-    contentStream.seek(pos[fl])
-    res = unpack("I",contentStream.read(4))[0]
-    pos[fl]+=4
-    return res
-def ReadShort(fl):
-    global pos,contentStream
-    contentStream.seek(pos[fl])
-    res = unpack("H",contentStream.read(2))[0]
-    pos[fl]+=2
-    return res
-def ReadBELong(fl):
-    global pos,contentStream
-    contentStream.seek(pos[fl])
-    res = unpack(">I",contentStream.read(4))[0]
-    pos[fl]+=4
-    return res
-def ReadBEShort(fl):
-    global pos,contentStream
-    contentStream.seek(pos[fl])
-    res = unpack(">H",contentStream.read(2))[0]
-    pos[fl]+=2
-    return res
-    
-#copied this code from http://davidejones.com/blog/1413-python-precision-floating-point/
-def _wrhf(float32):
-    F16_EXPONENT_BITS = 0x1F
-    F16_EXPONENT_SHIFT = 10
-    F16_EXPONENT_BIAS = 15
-    F16_MANTISSA_BITS = 0x3ff
-    F16_MANTISSA_SHIFT =  (23 - F16_EXPONENT_SHIFT)
-    F16_MAX_EXPONENT =  (F16_EXPONENT_BITS << F16_EXPONENT_SHIFT)
-
-    a = pack('>f',float32)
-    b = binascii.hexlify(a)
-
-    f32 = int(b,16)
-    f16 = 0
-    sign = (f32 >> 16) & 0x8000
-    exponent = ((f32 >> 23) & 0xff) - 127
-    mantissa = f32 & 0x007fffff
-            
-    if exponent == 128:
-        f16 = sign | F16_MAX_EXPONENT
-        if mantissa:
-            f16 |= (mantissa & F16_MANTISSA_BITS)
-    elif exponent > 15:
-        f16 = sign | F16_MAX_EXPONENT
-    elif exponent > -15:
-        exponent += F16_EXPONENT_BIAS
-        mantissa >>= F16_MANTISSA_SHIFT
-        f16 = sign | exponent << F16_EXPONENT_SHIFT | mantissa
-    else:
-        f16 = sign
-    return f16
-def _rdhf(float16):
-        s = int((float16 >> 15) & 0x00000001)    # sign
-        e = int((float16 >> 10) & 0x0000001f)    # exponent
-        f = int(float16 & 0x000003ff)            # fraction
-
-        if e == 0:
-            if f == 0:
-                return int(s << 31)
-            else:
-                while not (f & 0x00000400):
-                    f = f << 1
-                    e -= 1
-                e += 1
-                f &= ~0x00000400
-                #print(s,e,f)
-        elif e == 31:
-            if f == 0:
-                return int((s << 31) | 0x7f800000)
-            else:
-                return int((s << 31) | 0x7f800000 | (f << 13))
-
-        e = e + (127 -15)
-        f = f << 13
-        return unpack('f',pack('I',int((s << 31) | (e << 23) | f)))[0]
-
-def Read8s(fl):
-    return ReadByte(fl)*0.0078125
-def ReadHalfFloat(fl):
-    s = ReadShort(fl)
-    res = _rdhf(s)
-    #dbg("S: %08x R: %f" % (s,res))
-    return res
-def ReadFloat(fl):
-    global pos,contentStream
-    contentStream.seek(pos[fl])
-    res = unpack("f",contentStream.read(4))[0]
-    pos[fl]+=4
-    return res
-def ReadBEFloat(fl):
-    global pos,contentStream
-    contentStream.seek(pos[fl])
-    res = unpack(">f",contentStream.read(4))[0]
-    pos[fl]+=4
-    return res
-def ReadPointer(fl,size):
-    global pos,contentStream,x64
-    if(size==x64):
-        contentStream.seek(pos[fl])
-        res = unpack("Q",contentStream.read(8))[0]
-        pos[fl]+=8
-        return res
-    return None
-    
-def ReadBEVector3(fl):
-    global pos,contentStream
-    contentStream.seek(pos[fl])
-    res = unpack(">fff",contentStream.read(4*3))
-    pos[fl]+=4*3
-    return list(res)
-def ReadVector3(fl):
-    global pos,contentStream
-    contentStream.seek(pos[fl])
-    res = unpack("fff",contentStream.read(4*3))
-    pos[fl]+=4*3
-    return list(res)
-    
-def ReadBEVector4(fl):
-    global pos,contentStream
-    contentStream.seek(pos[fl])
-    res = unpack(">ffff",contentStream.read(4*4))
-    pos[fl]+=4*4
-    return list(res)
-def ReadVector4(fl):
-    global pos,contentStream
-    contentStream.seek(pos[fl])
-    res = unpack("ffff",contentStream.read(4*4))
-    pos[fl]+=4*4
-    return list(res)
-
-def WriteHalfFloats(fl,floats32):
-    global pos,contentStream
-    p = b''
-    for f in floats32:
-        f16 = _wrhf(f)
-        p += pack("<H",f16)
-    contentStream.seek(pos[fl])
-    contentStream.write(p)
-    pos[fl] += 2*len(floats32)
-def WriteFloats(fl,floats):
-    global pos,contentStream
-    #dbg("WriteFloats at 0x%08x %s" % (pos[fl],floats))
-    if pos[fl]==0:
-        raise Exception("Invalid write position")
-    p = pack("%df" % len(floats),*floats)
-    contentStream.seek(pos[fl])
-    contentStream.write(p)
-    pos[fl] += len(floats)*4
-def WriteBytes(fl,bytes):
-    global pos,contentStream
-    #dbg("WriteBytes at 0x%08x %s" % (pos[fl],bytes))
-    if pos[fl]==0:
-        raise Exception("Invalid write position")
-    p = pack("%dB" % len(bytes),*bytes)
-    contentStream.seek(pos[fl])
-    contentStream.write(p)
-    pos[fl] += len(bytes)
-def WriteShorts(fl,shorts):
-    if pos[fl]==0:
-        raise Exception("Invalid write position")
-    p = pack("%dH" % len(shorts),*shorts)
-    contentStream.seek(pos[fl])
-    contentStream.write(p)
-    pos[fl] += len(shorts)*2
-
-def WriteLongs(fl,longs):
-    global pos,contentStream
-    #dbg("WriteLongs at 0x%08x %s %d" % (pos[fl],longs,len(longs)))
-    if pos[fl]<=0:
-        raise Exception("Invalid write position %d" % pos[fl])
-    p = pack("%dL" % len(longs),*longs)
-    contentStream.seek(pos[fl])
-    contentStream.write(p)
-    pos[fl] += len(longs)*4
-def getPos(fl):
-    if pos[fl] < 0 :
-        raise Exception("invalid pos detected! [%d]" % pos[fl])
-    if pos[fl] > 0x100000000 :
-        raise Exception("invalid pos detected! [%d]" % pos[fl])
-    return pos[fl]
-def InsertEmptyBytes(fl,offset,count):
-    global contentStream
-    dbg("InsertEmptyBytes %08x %d" % (offset,count))
-    contentStream2 = BytesIO(b'')
-    contentStream.seek(0)
-    contentStream2.write(contentStream.read(offset))
-    contentStream2.write(b'\0'*count)
-    contentStream2.write(contentStream.read())
-    contentStream = contentStream2
-def DeleteBytes(fl,offset,count):
-    global contentStream
-    dbg("DeleteBytes %08x %d" % (offset,count))
-    contentStream2 = BytesIO(b'')
-    contentStream.seek(0)
-    contentStream2.write(contentStream.read(offset))
-    contentStream.seek(count,SEEK_CUR)
-    contentStream2.write(contentStream.read())
-    contentStream = contentStream2
-def Seek(fl,offset):
-    global pos,content_file
-    pos[fl]=offset
-def fseek(fl,roffset):
-    global pos,content_file
-    pos[fl]+=roffset
     
 def CollectStrips(fl,modf=1):
     dbg("CollectStrips")
@@ -1146,13 +363,12 @@ class MeshPart:
         weights = {}
         bones = {}
         vi = 0
-        if do_write_bones:
-            for v in verts2:
-                bones[v.index] = [int(obj.vertex_groups[g.group].name.split(".")[1]) for g in v.groups]
-                vertWeights = []
-                for g in v.groups:
-                    vertWeights.append(g.weight)
-                weights[v.index] = vertWeights
+        for v in verts2:
+            bones[v.index] = [int(obj.vertex_groups[g.group].name.split(".")[1]) for g in v.groups]
+            vertWeights = []
+            for g in v.groups:
+                vertWeights.append(g.weight)
+            weights[v.index] = vertWeights
         
         self.writemeshdataF(self,fl,verts,uvs,faces,weights,bones)
     def getName(self):
@@ -1193,10 +409,25 @@ def checkMeshesForModifiactions(export,i):
             continue
         obj = bpy.data.objects[n]
         bm = obj.data
+        my_id = None
         if not 'id' in bm.vertex_layers_int:
-            bm.vertex_layers_int.new('id')            
-        my_id = bm.vertex_layers_int['id']
-        
+            my_id = bm.vertex_layers_int.new('id')
+        else:
+            my_id = bm.vertex_layers_int['id']
+            vids = []
+            duplicateVids = False
+            for v in my_id.data:
+                if v != None:
+                    if v.value in vids:
+                        duplicateVids = True
+                        break
+                    vids.append(v.value)
+            if duplicateVids:
+                j = 0
+                for v in my_id.data:
+                    v.value = j
+                    j += 1
+                dbg("Mesh %s had duplicate id's in vertex layer, rebuilding")
         dbg("Mesh %s has file vertice-count: %d and current vertice-count: %d" % (n,p.VertexCount,len(bm.vertices)))
         
         faceCount = 0
@@ -1258,7 +489,6 @@ class ExportMOD3(Operator, ImportHelper):
                 description="overwrite the level of detail of the other meshes (for example if you used 'Only import high LOD-parts').",
                 default=False)
     def execute(self, context):
-        global content,pos,contentStream
         if not 'data' in bpy.data.texts:
             raise Exception("Make shure to import with \"Reference/Embed original data.\" first.")
         scene = bpy.context.scene
@@ -1272,14 +502,14 @@ class ExportMOD3(Operator, ImportHelper):
             dbg("path:%s" % path)
             with open(path, 'rb') as content_file:
                 content = content_file.read()
-                contentStream = BytesIO(content)
+                fl = createContentStream(content)
         else:
             data = base64.b64decode(dataText)
             content = zlib.decompress(data)
-            contentStream = BytesIO(content)
+            fl = createContentStream(content)
         i = ImportMOD3(self)
         i.init_main()
-        i.fl = 0
+        i.fl = fl
         Seek(i.fl,0)
         i.readHeader()
         i.readMeshParts()
@@ -1292,7 +522,7 @@ class ExportMOD3(Operator, ImportHelper):
         
         if self.overwrite_lod:
             for p in i.parts:
-                if p.LOD == 1:
+                if (p.LOD == 1) or (p.LOD == 0xFFFF):
                     p.writeLOD(i.fl,0xFFFF)
                 else:
                     p.writeLOD(i.fl,0)
@@ -1300,7 +530,7 @@ class ExportMOD3(Operator, ImportHelper):
         if self.do_write_bones:
             if "Armature" in bpy.data.objects:
                 self.writeBones(i,i.fl)
-        content = contentStream.getvalue()
+        content = getContentStreamValue(fl)
         with open(self.filepath, 'wb') as content_file:
             content_file.write(content)
         return {'FINISHED'}
@@ -1493,14 +723,15 @@ class ImportMOD3(Operator, ImportHelper):
                 loc,rot,scal = t.decompose()
                 bone2.head = parentBone.tail
                 bone2.tail = bone2.head+Vector((0.0,0.0,1.0))
+                #bone2.tail = bone2.head
                 dbg("#1 bone: %d l: %s r: %s s: %s,t:\n%s" % (b.id,loc,rot,scal,t))
                 bone2.transform(t)
                 
-                t2 = bone2.matrix*bone2.parent.matrix.inverted()
-                t2 *= Matrix.Translation(Vector((0,0,-1,1)))
-                #t2 *= Matrix.Rotation(90*math.pi/2,4,Vector((0,0,1)))
-                loc,rot,scal = t2.decompose()
-                dbg("#2 bone: %d l: %s r: %s s: %s,t2:\n%s" % (b.id,loc,rot,scal,t2))
+                #t2 = bone2.matrix*bone2.parent.matrix.inverted()
+                #t2 *= Matrix.Translation(Vector((0,0,-1,1)))
+                ##t2 *= Matrix.Rotation(90*math.pi/2,4,Vector((0,0,1)))
+                #loc,rot,scal = t2.decompose()
+                #dbg("#2 bone: %d l: %s r: %s s: %s,t2:\n%s" % (b.id,loc,rot,scal,t2))
 
                 self.addChildBones(a,bone2,b.id,bones)
                 i += 1
@@ -1540,6 +771,7 @@ class ImportMOD3(Operator, ImportHelper):
         i = 0
         k = 0
         parentBone = a.edit_bones[-1]
+        parentBone.transform(Matrix(((1,0,0),(0,0,1),(0,-1,0))))
         parentBone.name = FMT_BONE % 255
 
         for b in self.bones:
@@ -1568,13 +800,14 @@ class ImportMOD3(Operator, ImportHelper):
 
                 bone.head = parentBone.tail
                 bone.tail = bone.head+Vector((0.0,0.0,1.0))
+                #bone.tail = bone.head
                 bone.transform(t)
 
-                t2 = bone.matrix*bone.parent.matrix.inverted()
-                t2 *= Matrix.Translation(Vector((0,0,-1,1)))
-                #t2 *= Matrix.Rotation(90*math.pi/2,4,Vector((0,0,1)))
-                loc,rot,scal = t2.decompose()
-                dbg("#2 bone: %d l: %s r: %s s: %s,t2:\n%s" % (b.id,loc,rot,scal,t2))
+                #t2 = bone.matrix*bone.parent.matrix.inverted()
+                #t2 *= Matrix.Translation(Vector((0,0,-1,1)))
+                ##t2 *= Matrix.Rotation(90*math.pi/2,4,Vector((0,0,1)))
+                #loc,rot,scal = t2.decompose()
+                #dbg("#2 bone: %d l: %s r: %s s: %s,t2:\n%s" % (b.id,loc,rot,scal,t2))
                 k += 1
 
 
@@ -1675,14 +908,15 @@ class ImportMOD3(Operator, ImportHelper):
                     if lw > 6:
                         w7 = weights[vi][6]
                     weightVal = int(w1 / WEIGHT_MULTIPLIER) + (int(w2/ WEIGHT_MULTIPLIER)<<10) + (int(w3/ WEIGHT_MULTIPLIER)<<20)
+                    #dbg("Write weights for vertex %08x : %s" % (getPos(fl),[w1,w2,w3,w4,w5,w6,w7]))
                     WriteLongs(fl,[weightVal])
-
                     WriteBytes(fl,[int(w4 / WEIGHT_MULTIPLIER2) & 0xFF,int(w5 / WEIGHT_MULTIPLIER2) & 0xFF,int(w6 / WEIGHT_MULTIPLIER2) & 0xFF,int(w7 / WEIGHT_MULTIPLIER2) & 0xFF])
                     
                     fseek(fl,bonesOff)
                     boneList = bones[vi]
                     while len(bones[vi]) < 8:
                         boneList.append(0)
+                    #dbg("Write bone for vertex %08x : %s" % (getPos(fl),boneList[0:8]))
                     WriteBytes(fl,boneList[0:8])
                 else:
                     dbg("wrong bone mode")
@@ -1858,7 +1092,7 @@ class ImportMOD3(Operator, ImportHelper):
             m.loadmeshdata()
 
     def parseMrl3(self,filepath):
-        global PATH,CHUNK_PATH,content,contentStream
+        global PATH,CHUNK_PATH
 
         from .mhw_texture import doImportTex
 
@@ -1872,9 +1106,8 @@ class ImportMOD3(Operator, ImportHelper):
         
         with open(filepath, 'rb') as content_file:
             content = content_file.read()
-            contentStream = BytesIO(content)
+            fl = createContentStream(content)
 
-        fl      = 1
         Seek(fl,0)
         ReadLong(fl)
         for u in range(0,12):
@@ -1926,7 +1159,7 @@ class ImportMOD3(Operator, ImportHelper):
         return (materials,unknS2A)
     
     def execute(self, context):
-        global content,contentStream,CHUNK_PATH
+        global CHUNK_PATH
         
         self.embed_data = True if self.embed_mode == EMBED_MODE_DATA else False
         self.reference_data = True if self.embed_mode == EMBED_MODE_REFERENCE else False
@@ -1950,9 +1183,8 @@ class ImportMOD3(Operator, ImportHelper):
         if(self.use_layers != LAYER_MODE_NONE):
             dbg("using layers %s" % self.use_layers)
         with open(self.filepath, 'rb') as content_file:
-            fl = 0
             content = content_file.read()
-            contentStream = BytesIO(content)
+            fl = createContentStream(content)
             if self.reference_data:
                 if('data' in bpy.data.texts):
                     dataText = bpy.data.texts['data']
