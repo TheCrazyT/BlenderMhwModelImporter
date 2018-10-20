@@ -6,7 +6,8 @@
 x64 = 64
 
 FMT_BONE="Bone.%04d"
-
+MAIN_ARMATURE = "MainArmature"
+AMATRICES_ARMATURE = "AmatriceArmature"
 EMBED_MODE_NONE = "embed_none"
 EMBED_MODE_REFERENCE = "embed_reference"
 EMBED_MODE_DATA = "embed_data"
@@ -538,8 +539,10 @@ class ExportMOD3(Operator, ImportHelper):
                     p.writeLOD(i.fl,0)
 
         if self.do_write_bones:
-            if "Armature" in bpy.data.objects:
-                self.writeBones(i,i.fl)
+            if MAIN_ARMATURE in bpy.data.objects:
+                self.writeBones(i,i.fl,MAIN_ARMATURE)
+            if AMATRICES_ARMATURE in bpy.data.objects:
+                self.writeBones(i,i.fl,AMATRICES_ARMATURE)
         content = getContentStreamValue(fl)
         with open(self.filepath, 'wb') as content_file:
             content_file.write(content)
@@ -568,16 +571,20 @@ class ExportMOD3(Operator, ImportHelper):
         Seek(fl,0x60)
         WriteLongs(fl,[unknOffset])
 
-    def writeBones(self,headerref,fl):
+    def writeBones(self,headerref,fl,ArmatureName):
+        bpy.context.area.type = 'VIEW_3D'
+        bpy.ops.view3d.snap_cursor_to_center()
         scene = bpy.context.scene
-        scene.objects.active = bpy.data.objects["Armature"]
+        scene.objects.active = bpy.data.objects[ArmatureName]
         #bpy.ops.armature.select_all(action='DESELECT')
         bpy.ops.object.mode_set(mode='EDIT')
-        armature = bpy.data.objects["Armature"].data
+        armature = bpy.data.objects[ArmatureName].data
         if (FMT_BONE % 255) in armature.edit_bones:
             Seek(fl,headerref.BonesOffset)
             #TODO, also save parent structure
             fseek(fl,headerref.BoneCount*24)
+            if ArmatureName == AMATRICES_ARMATURE:
+                fseek(fl,headerref.BoneCount*64)
             #store "lmatrices"
             for i in range(0,headerref.BoneCount):
                 bone = armature.edit_bones[FMT_BONE % i]
@@ -710,6 +717,7 @@ class ImportMOD3(Operator, ImportHelper):
     def addArmature(self,name):
         bpy.ops.object.armature_add()
         ob = bpy.context.scene.objects.active
+        ob.name = name
         arm = ob.data
         arm.name = name
         return arm
@@ -781,8 +789,8 @@ class ImportMOD3(Operator, ImportHelper):
         if headerref.BoneMapCount != None:
             raise Exception("not implemented")
 
-    def createBones(self):
-        a = self.addArmature("MainArmature")
+    def createBones(self,armatureName,matrices):
+        a = self.addArmature(armatureName)
         a.draw_type = 'STICK'
         bpy.ops.object.mode_set(mode='EDIT')
         bpy.ops.armature.select_all(action='DESELECT')
@@ -799,7 +807,7 @@ class ImportMOD3(Operator, ImportHelper):
             if (b.parentid == b.id)or(b.parentid == 255):
                 bone = a.edit_bones.new(FMT_BONE % b.id)
 
-                lm = self.lmatrices[i]
+                lm = matrices[i]
                 c1 = lm.col1
                 c2 = lm.col2
                 c3 = lm.col3
@@ -844,7 +852,7 @@ class ImportMOD3(Operator, ImportHelper):
             if o.type == "MESH":
                 bpy.context.scene.objects.active = o
                 bpy.ops.object.modifier_add(type='ARMATURE')
-                bpy.context.object.modifiers['Armature'].object = bpy.data.objects['Armature']
+                bpy.context.object.modifiers[-1].object = bpy.data.objects[armatureName]
     
     def writeFaces(self,meshPart,fl,faces):
         headerref = meshPart.headerref
@@ -1409,7 +1417,8 @@ class ImportMOD3(Operator, ImportHelper):
             pi += 1
 
         if self.do_read_bones:
-            self.createBones()
+            self.createBones(MAIN_ARMATURE,self.lmatrices)
+            self.createBones(AMATRICES_ARMATURE,self.amatrices)
         
 # Only needed if you want to add into a dynamic menu
 def menu_func_import(self, context):
