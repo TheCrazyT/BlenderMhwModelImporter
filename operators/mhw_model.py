@@ -718,6 +718,7 @@ class ImportMOD3(Operator, ImportHelper):
         bpy.ops.object.armature_add()
         ob = bpy.context.scene.objects.active
         ob.name = name
+        ob.show_x_ray = True
         arm = ob.data
         arm.name = name
         return arm
