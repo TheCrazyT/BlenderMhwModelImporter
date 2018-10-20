@@ -23,7 +23,7 @@ def ReadBytes(fl,l):
     global pos,contentStreams
     contentStream = contentStreams[fl]
     contentStream.seek(pos[fl])
-    res = unpack("%sB" % l,contentStream.read(l))[0]
+    res = unpack("%dB" % l,contentStream.read(l))[0]
     pos[fl]+=l
     return res
 def ReadLong(fl):
@@ -171,6 +171,14 @@ def ReadVector4(fl):
     res = unpack("ffff",contentStream.read(4*4))
     pos[fl]+=4*4
     return list(res)
+def ReadString(fl,length):
+    global pos,contentStreams
+    contentStream = contentStreams[fl]
+    contentStream.seek(pos[fl])
+    res = unpack("%ds"%length,contentStream.read(length))[0].decode("utf-8").replace("\x00","")
+    pos[fl]+=length
+    return res
+    
 
 def WriteHalfFloats(fl,floats32):
     global pos,contentStreams
@@ -211,7 +219,6 @@ def WriteShorts(fl,shorts):
     contentStream.seek(pos[fl])
     contentStream.write(p)
     pos[fl] += len(shorts)*2
-
 def WriteLongs(fl,longs):
     global pos,contentStreams
     contentStream = contentStreams[fl]

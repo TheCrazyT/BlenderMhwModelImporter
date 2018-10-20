@@ -307,11 +307,19 @@ class MeshPart:
         bm = obj.data
         if "LOD" in bm:
             self.writeLOD(fl,bm["LOD"])
+        if "Material" in bm:
+            if bm["Material"] in headerref.materials:
+                self.writeMaterial(fl,headerref.materials.index(bm["Material"]))
+    def writeMaterial(self,fl,materialIndex):
+        Seek(fl,self.MeshPartOffset+self.getMaterialOffset())
+        WriteShorts(fl,[materialIndex])
     def writeLOD(self,fl,lod):
         Seek(fl,self.MeshPartOffset+self.getLODOffset())
         WriteLongs(fl,[lod])
     def getLODOffset(self):
         return 8
+    def getMaterialOffset(self):
+        return 6
     def writeVertexes(self,fl,do_write_bones):
         dbg("writeVertexes uid:%d" % self.uid)
         headerref = self.headerref
@@ -467,6 +475,7 @@ def checkMeshesForModifiactions(export,i):
         Seek(i.fl,0)
         i.init_main()
         i.readHeader()
+        i.materials = i.readMaterials()
         i.readMeshParts()
 
 
@@ -485,7 +494,7 @@ class ExportMOD3(Operator, ImportHelper):
             name="Export bones and armature (experimental)",
             description="Exports bone information.",
             default=False)
-    overwrite_lod = BoolProperty(name="Force LOD1 (experimental)",
+    overwrite_lod = BoolProperty(name="Force LOD1",
                 description="overwrite the level of detail of the other meshes (for example if you used 'Only import high LOD-parts').",
                 default=False)
     def execute(self, context):
@@ -512,6 +521,7 @@ class ExportMOD3(Operator, ImportHelper):
         i.fl = fl
         Seek(i.fl,0)
         i.readHeader()
+        i.materials = i.readMaterials()
         i.readMeshParts()
         
         checkMeshesForModifiactions(self,i)
@@ -571,9 +581,10 @@ class ExportMOD3(Operator, ImportHelper):
             #store "lmatrices"
             for i in range(0,headerref.BoneCount):
                 bone = armature.edit_bones[FMT_BONE % i]
-                t2 = bone.matrix*bone.parent.matrix.inverted()
+                t2 = mathutils.Matrix.Translation(bone.tail)*mathutils.Matrix.Translation(bone.head).inverted()
+                #t2 = bone.matrix*bone.parent.matrix.inverted()
                 #dbg("%s %s %s" % (bone.matrix,bone.parent.matrix,t2))
-                t2 *= Matrix.Translation(Vector((0,0,-1,1)))
+                #t2 *= Matrix.Translation(Vector((0,0,-1,1)))
                 #t2 *= Matrix.Rotation(90*math.pi/2,4,Vector((0,0,1)))
                 dbg("write bone %d at offset %08x:\n%s" % (i,getPos(fl),t2))
                 for r in t2.transposed().row:
@@ -585,7 +596,9 @@ class ExportMOD3(Operator, ImportHelper):
 
 def textfield_update(self,context):
     context.default = self
-        
+
+
+#TODO: seperate header-info from import class
 class ImportMOD3(Operator, ImportHelper):
     bl_idname = "custom_import.import_mhw"
     bl_label = "Load MHW MOD file (.mod3)"
@@ -597,48 +610,48 @@ class ImportMOD3(Operator, ImportHelper):
     
     
     chunk_path = StringProperty(
-            name="Chunk path",
-            description="Path to chunk folder (containing template.mrl3 for example)",
-            default=CHUNK_PATH,
-            update=textfield_update,
+            name = "Chunk path",
+            description = "Path to chunk folder (containing template.mrl3 for example)",
+            default = CHUNK_PATH,
+            update = textfield_update,
     )
     install_path = StringProperty(
-            name="Install path.",
-            description="Path the contains the Scarlet directory.",
-            default=PATH,
-            update=textfield_update,
+            name = "Install path.",
+            description = "Path the contains the Scarlet directory.",
+            default = PATH,
+            update = textfield_update,
     )
     use_layers = EnumProperty(
-            name="Layer mode",
-            description="Chose what mesh should be put to what layer.",
-            items=[ENUM_LAYER_MODE_NONE,ENUM_LAYER_MODE_PARTS,ENUM_LAYER_MODE_LOD],
-            default=LAYER_MODE_PARTS
+            name = "Layer mode",
+            description = "Chose what mesh should be put to what layer.",
+            items = [ENUM_LAYER_MODE_NONE,ENUM_LAYER_MODE_PARTS,ENUM_LAYER_MODE_LOD],
+            default = LAYER_MODE_PARTS
     )
     import_textures = BoolProperty(
-            name="Import textures.",
-            description="Looks automatically for the *.mrl3 file and imports the *.tex files.",
-            default=False,
+            name = "Import textures.",
+            description = "Looks automatically for the *.mrl3 file and imports the *.tex files.",
+            default = False,
     )
     only_import_lod_1 = BoolProperty(
-            name="Only import high LOD-parts.",
-            description="Skip meshparts with low level of detail.",
-            default=True,
+            name = "Only import high LOD-parts.",
+            description = "Skip meshparts with low level of detail.",
+            default = True,
     )
     only_import_lod = IntProperty(
-            name="Only import LOD parts with level:",
-            description="If not -1 it imports only parts with a defined level of detail.",
-            default=-1,
+            name = "Only import LOD parts with level:",
+            description = "If not -1 it imports only parts with a defined level of detail.",
+            default = -1,
     )
     embed_mode = EnumProperty(
-            name="Embed mode",
-            description="Used for beeing able to export the object.",
-            items=[ENUM_EMBED_MODE_NONE,ENUM_EMBED_MODE_REFERENCE,ENUM_EMBED_MODE_DATA],
-            default=EMBED_MODE_REFERENCE
+            name = "Embed mode",
+            description = "Used for beeing able to export the object.",
+            items = [ENUM_EMBED_MODE_NONE,ENUM_EMBED_MODE_REFERENCE,ENUM_EMBED_MODE_DATA],
+            default = EMBED_MODE_REFERENCE
     )
     do_read_bones = BoolProperty(
-            name="Import bones and armature",
-            description="Imports bones ... useful for testing poses.",
-            default=True)
+            name = "Import bones and armature",
+            description = "Imports bones ... useful for testing poses.",
+            default = True)
 
 
     def init_main(self):
@@ -670,7 +683,7 @@ class ImportMOD3(Operator, ImportHelper):
             self.BoneMapCount = ReadPointer(fl,x64)
         self.BonesOffset = ReadPointer(fl,x64)
         self.GroupOffset = ReadPointer(fl,x64)
-        self.TextureOffset = ReadPointer(fl,x64)
+        self.MaterialNamesOffset = ReadPointer(fl,x64)
         self.MeshOffset = ReadPointer(fl,x64)
         self.VertexOffset =ReadPointer(fl,x64)
         if self.Version < 190:
@@ -722,10 +735,16 @@ class ImportMOD3(Operator, ImportHelper):
                           ))
                 loc,rot,scal = t.decompose()
                 bone2.head = parentBone.tail
-                bone2.tail = bone2.head+Vector((0.0,0.0,1.0))
+                loc.rotate(rot)
+                if loc.length <= 0.0001:
+                    dbg("Bone length cannot be 0, adjusting")
+                    loc = Vector((0.0,0.0,0.0001))
+
+                bone2.tail = bone2.head+loc
+                #bone2.tail = bone2.head+Vector((0.0,0.0,1.0))
                 #bone2.tail = bone2.head
-                dbg("#1 bone: %d l: %s r: %s s: %s,t:\n%s" % (b.id,loc,rot,scal,t))
-                bone2.transform(t)
+                dbg("#1 bone: %d length:%f l: %s r: %s s: %s,t:\n%s" % (b.id,loc.length,loc,rot,scal,t))
+                #bone2.transform(t)
                 
                 #t2 = bone2.matrix*bone2.parent.matrix.inverted()
                 #t2 *= Matrix.Translation(Vector((0,0,-1,1)))
@@ -764,6 +783,7 @@ class ImportMOD3(Operator, ImportHelper):
 
     def createBones(self):
         a = self.addArmature("MainArmature")
+        a.draw_type = 'STICK'
         bpy.ops.object.mode_set(mode='EDIT')
         bpy.ops.armature.select_all(action='DESELECT')
         a.edit_bones[0].select_tail = True
@@ -796,12 +816,17 @@ class ImportMOD3(Operator, ImportHelper):
                 #bone.tail = bone.head+Vector((0.0,0.0,1.0))
 
                 loc,rot,scal = t.decompose()
-                dbg("##1 bone: %d l: %s r: %s s: %s,t:\n%s" % (b.id,loc,rot,scal,t))
+                if loc.length <= 0.0001:
+                    dbg("Bone length cannot be 0, adjusting")
+                    loc = Vector((0.0,0.0,0.0001))
+                dbg("##1 bone: %d length: %f l: %s r: %s s: %s,t:\n%s" % (b.id,loc.length,loc,rot,scal,t))
 
                 bone.head = parentBone.tail
-                bone.tail = bone.head+Vector((0.0,0.0,1.0))
+                loc.rotate(rot)
+                bone.tail = bone.head+loc
+                #bone.tail = bone.head+Vector((0.0,0.0,1.0))
                 #bone.tail = bone.head
-                bone.transform(t)
+                #bone.transform(t)
 
                 #t2 = bone.matrix*bone.parent.matrix.inverted()
                 #t2 *= Matrix.Translation(Vector((0,0,-1,1)))
@@ -991,8 +1016,8 @@ class ImportMOD3(Operator, ImportHelper):
         else:
             fl = self.fl
             id = ReadShort(fl)
-            Material = ReadShort(fl )
             UnknS2Idx = ReadByte(fl)
+            Material = ReadShort(fl)
             LOD = ReadByte(fl)
             readshort(fl)
             BlockSize = ReadByte(fl)
@@ -1039,7 +1064,7 @@ class ImportMOD3(Operator, ImportHelper):
         ReadShort(headerref.fl)
         VertexCount = ReadShort(headerref.fl)     
         id = ReadShort(headerref.fl)
-        UnknS2Idx = ReadShort(headerref.fl)
+        Material = ReadShort(headerref.fl)
         lod = ReadLong(headerref.fl)
         ReadShort(headerref.fl)
         BlockSize = ReadByte(headerref.fl)
@@ -1056,8 +1081,8 @@ class ImportMOD3(Operator, ImportHelper):
             MeshPartOffset,
             uid,
             id,
+            Material,
             None,
-            UnknS2Idx,
             lod,
             BlockSize,
             BlockType,
@@ -1073,9 +1098,21 @@ class ImportMOD3(Operator, ImportHelper):
             self.loadmeshdatav3,
             self.writemeshdatav3)
     
+    def readMaterials(self):
+        dbg("readMaterials")
+        headerref = self.headerref
+        Seek(self.fl,headerref.MaterialNamesOffset)
+        materials = []
+        for i in range(0,headerref.MaterialCount):
+            s = ReadString(headerref.fl,128)
+            dbg(s)
+            materials.append(s)
+        return materials
+    
     def readMeshParts(self):
-        dbg("readMeshParts, meshOffset: %08x" % self.MeshOffset)
-        Seek(self.fl,self.MeshOffset)
+        headerref = self.headerref
+        dbg("readMeshParts, meshOffset: %08x" % headerref.MeshOffset)
+        Seek(self.fl,headerref.MeshOffset)
         if(self.Version == 237):
             readMeshPart = self.readMeshPartv3
         elif(self.Version < 190):
@@ -1084,10 +1121,11 @@ class ImportMOD3(Operator, ImportHelper):
             readMeshPart = self.readMeshPartv2
         for i in range(0,self.MeshCount):
            self.parts.append(readMeshPart(i))
-        dbg("%d %d" % (len(self.parts),self.MeshCount))
+        dbg("%d %d" % (len(self.parts),headerref.MeshCount))
 
     def readVertexes(self):
-        Seek(self.fl,self.VertexOffset)
+        headerref = self.headerref
+        Seek(self.fl,headerref.VertexOffset)
         for m in self.parts:
             m.loadmeshdata()
 
@@ -1223,6 +1261,7 @@ class ImportMOD3(Operator, ImportHelper):
         Seek(fl,0)
             
         self.readHeader()
+        self.materials = self.readMaterials()
         if self.do_read_bones:
             self.readBones()
         self.readMeshParts()
@@ -1240,7 +1279,7 @@ class ImportMOD3(Operator, ImportHelper):
                     clod += 1
         dbg("self.parts: %d" % len(self.parts))
         for m in self.parts:
-            if ((self.only_import_lod < 0)and(self.only_import_lod_1)) and (m.LOD != 1):
+            if ((self.only_import_lod < 0) and (self.only_import_lod_1)) and ((m.LOD != 1) and (m.LOD != 0xFFFF)):
                 dbg("Skipped mesh %d because of lod level: %d, expected: 1" % (pi,m.LOD))
                 pi += 1
                 continue
@@ -1361,6 +1400,7 @@ class ImportMOD3(Operator, ImportHelper):
 
                 mesh.materials.append(shadeless)
                 mesh["LOD"] = m.LOD
+                mesh["Material"] = self.materials[m.Material]
 
                 bm.free()  # always do this when finished
             else:

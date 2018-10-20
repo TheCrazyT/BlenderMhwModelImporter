@@ -1,21 +1,8 @@
 [ ![Download](https://api.bintray.com/packages/thecrazyt/BlenderMhwModelImporter/BlenderMhwModelImporter/images/download.svg) ](https://bintray.com/thecrazyt/BlenderMhwModelImporter/BlenderMhwModelImporter/_latestVersion)
+Page on Nexus-Mods: https://www.nexusmods.com/monsterhunterworld/mods/242
  
 
-Quick install instructions:
-
- Extract the files and folders of the archive into a new folder and copy that folder to:
- 
-  c:\Users\YOUR_USERNAME\AppData\Roaming\Blender Foundation\Blender\2.79\scripts\addons\
-  
-  (replace YOUR_USERNAME with your login name and 2.79 with your blender version)
-  
-  (Hint: type %APPDATA% in your explorer-window to get to your "Roaming"-directory)
-  
-  ![install_folder1](screenshoots/install_folder1.png)
-
-  ![install_folder2](screenshoots/install_folder2.png)
-  
-  Make shure that "Import-Export: MHW Model Importer" in the user-preferences window under the section "add-ons" is checked.
+Run start.bat to execute the addon.
 
 
 18.10.2018:
