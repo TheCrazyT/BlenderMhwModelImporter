@@ -4,6 +4,12 @@ Page on Nexus-Mods: https://www.nexusmods.com/monsterhunterworld/mods/242
 
 Run start.bat to execute the addon.
 
+21.10.2018:
+
+Added normals on import and option for exporing normals.
+Changed bone model and handling, sadly still problems with downsized monsters (test with replacing poogie).
+Added "amatrice"-bonestructure.
+Setted X-Ray as default for bone-skeleton.
 
 18.10.2018:
 
@@ -14,7 +20,7 @@ Also:
 Restructurized code.
 Fixed bug with install.  
   
-  
+
 14.10.2018:
 
 Trying to remove vertex-count limit.

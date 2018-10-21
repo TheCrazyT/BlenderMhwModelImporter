@@ -321,7 +321,7 @@ class MeshPart:
         return 8
     def getMaterialOffset(self):
         return 6
-    def writeVertexes(self,fl,do_write_bones):
+    def writeVertexes(self,fl,do_write_bones,export_normals):
         dbg("writeVertexes uid:%d" % self.uid)
         headerref = self.headerref
         n = self.getName()
@@ -378,8 +378,12 @@ class MeshPart:
             for g in v.groups:
                 vertWeights.append(g.weight)
             weights[v.index] = vertWeights
+        normals = {}
+        if export_normals:
+            for v in verts2:
+                normals[v.index] = v.normal
         
-        self.writemeshdataF(self,fl,verts,uvs,faces,weights,bones)
+        self.writemeshdataF(self,fl,verts,uvs,faces,weights,bones,normals)
     def getName(self):
         return "MyObject.%05d.%08x" % (self.uid,self.BlockType)
 
@@ -498,6 +502,9 @@ class ExportMOD3(Operator, ImportHelper):
     overwrite_lod = BoolProperty(name="Force LOD1",
                 description="overwrite the level of detail of the other meshes (for example if you used 'Only import high LOD-parts').",
                 default=False)
+    export_normals = BoolProperty(name="Export normals (experimental)",
+                description="Exports normals for every vertice.",
+                default=False)
     def execute(self, context):
         if not 'data' in bpy.data.texts:
             raise Exception("Make shure to import with \"Reference/Embed original data.\" first.")
@@ -528,7 +535,7 @@ class ExportMOD3(Operator, ImportHelper):
         checkMeshesForModifiactions(self,i)
         
         for p in i.parts:
-            p.writeVertexes(i.fl,self.do_write_bones)
+            p.writeVertexes(i.fl,self.do_write_bones,self.export_normals)
             p.writeCustomProperties(i.fl)
         
         if self.overwrite_lod:
@@ -601,9 +608,28 @@ class ExportMOD3(Operator, ImportHelper):
         #bpy.ops.armature.select_all(action='DESELECT')
 
 
-def textfield_update(self,context):
-    context.default = self
-
+def chunk_path_update(self,context):
+    dbg("chunk_path: %s" % (ImportMOD3.chunk_path,))
+    ImportMOD3.chunk_path[1]["default"] = self.chunk_path
+def install_path_update(self,context):
+    dbg("install_path: %s" % (ImportMOD3.install_path,))
+    ImportMOD3.install_path[1]["default"] = self.install_path
+def use_layers_changed(self,context):
+    dbg("use_layers: '%s'" % (self.use_layers))
+    if self.use_layers == LAYER_MODE_LOD:
+        self.only_import_lod_1 = False
+def only_import_lod_changed(self,context):
+    if (self.only_import_lod != -1) and self.only_import_lod_1:
+        self.only_import_lod_1 = False
+def only_import_lod_1_changed(self,context):
+    if self.only_import_lod_1 and (self.only_import_lod != -1):
+        self.only_import_lod = -1
+def read_amatrices_changed(self,context):
+    if self.read_amatrices and not self.do_read_bones:
+        self.do_read_bones = True
+def do_read_bones(self,context):
+    if self.read_amatrices and not self.do_read_bones:
+        self.read_amatrices = False
 
 #TODO: seperate header-info from import class
 class ImportMOD3(Operator, ImportHelper):
@@ -616,23 +642,28 @@ class ImportMOD3(Operator, ImportHelper):
     filter_glob = StringProperty(default="*.mod3", options={'HIDDEN'}, maxlen=255)
     
     
+    clear_scene_before_import = BoolProperty(
+            name = "Clear scene before import.",
+            description = "Recommended, exporting multiple mod3-files is not supported.",
+            default = True)
     chunk_path = StringProperty(
             name = "Chunk path",
             description = "Path to chunk folder (containing template.mrl3 for example)",
             default = CHUNK_PATH,
-            update = textfield_update,
+            update = chunk_path_update,
     )
     install_path = StringProperty(
-            name = "Install path.",
+            name = "Install path",
             description = "Path the contains the Scarlet directory.",
             default = PATH,
-            update = textfield_update,
+            update = install_path_update,
     )
     use_layers = EnumProperty(
             name = "Layer mode",
             description = "Chose what mesh should be put to what layer.",
             items = [ENUM_LAYER_MODE_NONE,ENUM_LAYER_MODE_PARTS,ENUM_LAYER_MODE_LOD],
-            default = LAYER_MODE_PARTS
+            default = LAYER_MODE_PARTS,
+            update = use_layers_changed,
     )
     import_textures = BoolProperty(
             name = "Import textures.",
@@ -643,11 +674,13 @@ class ImportMOD3(Operator, ImportHelper):
             name = "Only import high LOD-parts.",
             description = "Skip meshparts with low level of detail.",
             default = True,
+            update = only_import_lod_1_changed,
     )
     only_import_lod = IntProperty(
             name = "Only import LOD parts with level:",
             description = "If not -1 it imports only parts with a defined level of detail.",
             default = -1,
+            update = only_import_lod_changed,
     )
     embed_mode = EnumProperty(
             name = "Embed mode",
@@ -656,10 +689,17 @@ class ImportMOD3(Operator, ImportHelper):
             default = EMBED_MODE_REFERENCE
     )
     do_read_bones = BoolProperty(
-            name = "Import bones and armature",
+            name = "Import bones and armature.",
             description = "Imports bones ... useful for testing poses.",
-            default = True)
-
+            default = True,
+            update = do_read_bones
+    )
+    read_amatrices = BoolProperty(
+            name = "Import amatrices.",
+            description = "It's another bone structure.\nCurrently don't know what this is for.",
+            default = False,
+            update = read_amatrices_changed
+    )
 
     def init_main(self):
         self.headerref = self
@@ -860,11 +900,11 @@ class ImportMOD3(Operator, ImportHelper):
         dbg("writeFaces % 08x" % (headerref.FaceOffset+meshPart.FaceOffset*2))
         Seek(fl,headerref.FaceOffset+meshPart.FaceOffset*2)
         WriteShorts(fl,faces)
-    def writemeshdatav1(self,meshPart,fl,vertices,uvs,faces,weights,bones):
+    def writemeshdatav1(self,meshPart,fl,vertices,uvs,faces,weights,bones,normals):
         raise Exception("NotImplementedError")
-    def writemeshdatav2(self,meshPart,fl,vertices,uvs,faces,weights,bones):
+    def writemeshdatav2(self,meshPart,fl,vertices,uvs,faces,weights,bones,normals):
         raise Exception("NotImplementedError")
-    def writemeshdatav3(self,meshPart,fl,vertices,uvs,faces,weights,bones):
+    def writemeshdatav3(self,meshPart,fl,vertices,uvs,faces,weights,bones,normals):
         headerref = meshPart.headerref
         BOFF=meshPart.VertexSub+meshPart.FaceAdd
         dbg("meshPart.VertexOffset %08x" % (headerref.VertexOffset+meshPart.VertexOffset+meshPart.BlockSize*BOFF))
@@ -882,9 +922,20 @@ class ImportMOD3(Operator, ImportHelper):
             vStartPos = getPos(fl)
             #dbg("vStartPos: %08x" % vStartPos)
             WriteFloats(fl,v3)
+            if len(normals)>0:
+                nvec = normals[vi]
+                #dbg("normals for %d: %s" % (vi,nvec))
+                floats = []
+                floats.append(nvec.x)
+                floats.append(nvec.y)
+                floats.append(nvec.z)
+                #dbg("normals as bytes for %d: %s" % (vi,bytes))
+                Write8s(fl,floats)
+            else:
+                fseek(fl,3)
             vertexBuffer = eval("MODVertexBuffer%08x" % meshPart.BlockType)
             structSize = vertexBuffer.getStructSize()
-            uvOFF = vertexBuffer.getUVOFFAfterVert()
+            uvOFF = vertexBuffer.getUVOFFAfterNormals()
             fseek(fl,uvOFF)
             if len(uvs)>0:
                 WriteHalfFloats(fl,[uvs[uvi].x,1-uvs[uvi].y])
@@ -1208,56 +1259,66 @@ class ImportMOD3(Operator, ImportHelper):
     def execute(self, context):
         global CHUNK_PATH
         
-        self.embed_data = True if self.embed_mode == EMBED_MODE_DATA else False
-        self.reference_data = True if self.embed_mode == EMBED_MODE_REFERENCE else False
-        self.init_main()
-        CHUNK_PATH = self.chunk_path
-        if CHUNK_PATH[len(CHUNK_PATH)-1] == '\\':
-            CHUNK_PATH = CHUNK_PATH[0:len(CHUNK_PATH)-1]
-        PATH = self.install_path
-        if not os.path.isdir(PATH):
-            raise Exception("Install path %s not found!" % PATH)
-        dbg("CHUNK_PATH: %s" % CHUNK_PATH)
-        dbg("PATH: %s" % PATH)
-        dbg("self: %s" % self)
-        dbg("context: %s" % context)
-        dbg("typeof(chunk_path): %s " % type(self.chunk_path))
-        setInstallPath(PATH)
-        setChunkPath(CHUNK_PATH)
-        writeConfig()
-        if(self.import_textures):
-            (self.materials,self.unknS2) = self.parseMrl3(self.filepath.replace(".mod3",".mrl3"))
-        if(self.use_layers != LAYER_MODE_NONE):
-            dbg("using layers %s" % self.use_layers)
-        with open(self.filepath, 'rb') as content_file:
-            content = content_file.read()
-            fl = createContentStream(content)
-            if self.reference_data:
-                if('data' in bpy.data.texts):
-                    dataText = bpy.data.texts['data']
-                    dataText.clear()
-                else:
-                    dataText = bpy.data.texts.new('data')
-                dataText.from_string("path:%s" % self.filepath)
-            else:
-                if self.embed_data:
-                    cdata = zlib.compress(content)
-                    dbg("len of compressed-data: %d" % len(cdata))
-                    data = base64.b64encode(cdata).decode("utf-8")
-                    dbg("len of b64-data: %d" % len(data))
+        previous_context = bpy.context.area.type
+        bpy.context.area.type = 'VIEW_3D'
+        bpy.ops.view3d.snap_cursor_to_center()            
+        try:
+            if self.clear_scene_before_import:
+                bpy.ops.object.select_all(action='SELECT')
+                bpy.ops.object.delete() 
+            self.embed_data = True if self.embed_mode == EMBED_MODE_DATA else False
+            self.reference_data = True if self.embed_mode == EMBED_MODE_REFERENCE else False
+            self.init_main()
+            CHUNK_PATH = self.chunk_path
+            if CHUNK_PATH[len(CHUNK_PATH)-1] == '\\':
+                CHUNK_PATH = CHUNK_PATH[0:len(CHUNK_PATH)-1]
+            PATH = self.install_path
+            if not os.path.isdir(PATH):
+                raise Exception("Install path %s not found!" % PATH)
+            dbg("CHUNK_PATH: %s" % CHUNK_PATH)
+            dbg("PATH: %s" % PATH)
+            dbg("self: %s" % self)
+            dbg("context: %s" % context)
+            dbg("typeof(chunk_path): %s " % type(self.chunk_path))
+            setInstallPath(PATH)
+            setChunkPath(CHUNK_PATH)
+            writeConfig()
+            if(self.import_textures):
+                (self.materials,self.unknS2) = self.parseMrl3(self.filepath.replace(".mod3",".mrl3"))
+            if(self.use_layers != LAYER_MODE_NONE):
+                dbg("using layers %s" % self.use_layers)
+            with open(self.filepath, 'rb') as content_file:
+                content = content_file.read()
+                fl = createContentStream(content)
+                if self.reference_data:
                     if('data' in bpy.data.texts):
                         dataText = bpy.data.texts['data']
                         dataText.clear()
                     else:
                         dataText = bpy.data.texts.new('data')
-                    dataText.from_string(data)
-        self.startImport(fl)
-        if(self.import_textures):
-            area = next(area for area in bpy.context.screen.areas if area.type == 'VIEW_3D')
-            space = next(space for space in area.spaces if space.type == 'VIEW_3D')
-            space.viewport_shade = "TEXTURED"
-        bpy.ops.object.select_all(action='DESELECT')
-        return {'FINISHED'}        
+                    dataText.from_string("path:%s" % self.filepath)
+                else:
+                    if self.embed_data:
+                        cdata = zlib.compress(content)
+                        dbg("len of compressed-data: %d" % len(cdata))
+                        data = base64.b64encode(cdata).decode("utf-8")
+                        dbg("len of b64-data: %d" % len(data))
+                        if('data' in bpy.data.texts):
+                            dataText = bpy.data.texts['data']
+                            dataText.clear()
+                        else:
+                            dataText = bpy.data.texts.new('data')
+                        dataText.from_string(data)
+            self.startImport(fl)
+            if(self.import_textures):
+                bpy.context.area.type = previous_context
+                area = next(area for area in bpy.context.screen.areas if area.type == 'VIEW_3D')
+                space = next(space for space in area.spaces if space.type == 'VIEW_3D')
+                space.viewport_shade = "TEXTURED"
+            bpy.ops.object.select_all(action='DESELECT')
+            return {'FINISHED'}
+        finally:
+            bpy.context.area.type = previous_context
     def startImport(self,fl):
         if not "shadeless" in bpy.data.materials:
             shadeless = bpy.data.materials.new("Shadeless")
@@ -1298,7 +1359,8 @@ class ImportMOD3(Operator, ImportHelper):
                 continue
             if m.meshdata != None:
                 rpi += 1
-                dbg("Import mesh %d" % pi)
+                normals = m.meshdata.normalarray
+                dbg("Import mesh %d, normals length: %d" % (pi,len(normals)))
                 bm = bmesh.new()
                 my_id = bm.verts.layers.int.new('id')
                 bm.verts.ensure_lookup_table()
@@ -1316,6 +1378,9 @@ class ImportMOD3(Operator, ImportHelper):
                     #dbg(v)
                     verts2.append(v)
                     bmv = bm.verts.new(v)
+                    if vi < len(normals):
+                        bmv.normal = [float(normals[vi][0]),float(normals[vi][1]),float(normals[vi][2])]
+                        #dbg("normal: %s" % bmv.normal)
                     bmv[my_id] = vi
                     bmv.index = vi
                     verts.append(bmv)
@@ -1419,7 +1484,8 @@ class ImportMOD3(Operator, ImportHelper):
 
         if self.do_read_bones:
             self.createBones(MAIN_ARMATURE,self.lmatrices)
-            self.createBones(AMATRICES_ARMATURE,self.amatrices)
+            if self.read_amatrices:
+                self.createBones(AMATRICES_ARMATURE,self.amatrices)
         
 # Only needed if you want to add into a dynamic menu
 def menu_func_import(self, context):

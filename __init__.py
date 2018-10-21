@@ -11,7 +11,8 @@ bl_info = {
     "category": "Import-Export",
     "author": "CrazyT",
     "location": "File > Import",
-    "version": "{VERSION}"
+    "version": "{VERSION}",
+    "warning": "commit {COMMIT}"
 }
  
  

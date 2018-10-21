@@ -3,7 +3,7 @@ from io import BytesIO
 from struct import pack,unpack
 from os import SEEK_SET,SEEK_CUR,SEEK_END
 from ..dbg import dbg
-
+C8S = 0.0078125
 pos = {}
 contentStreams = []
 def getContentStreamValue(fl):
@@ -12,6 +12,13 @@ def createContentStream(content):
     global contentStreams
     contentStreams.append(BytesIO(content))
     return len(contentStreams)-1
+def ReadSByte(fl):
+    global pos,contentStreams
+    contentStream = contentStreams[fl]
+    contentStream.seek(pos[fl])
+    res = unpack("b",contentStream.read(1))[0]
+    pos[fl]+=1
+    return res
 def ReadByte(fl):
     global pos,contentStreams
     contentStream = contentStreams[fl]
@@ -112,7 +119,7 @@ def _rdhf(float16):
         return unpack('f',pack('I',int((s << 31) | (e << 23) | f)))[0]
 
 def Read8s(fl):
-    return ReadByte(fl)*0.0078125
+    return ReadSByte(fl)*C8S
 def ReadHalfFloat(fl):
     s = ReadShort(fl)
     res = _rdhf(s)
@@ -210,6 +217,25 @@ def WriteBytes(fl,bytes):
     contentStream.seek(pos[fl])
     contentStream.write(p)
     pos[fl] += len(bytes)
+def WriteSBytes(fl,bytes):
+    global pos,contentStreams
+    contentStream = contentStreams[fl]
+    #dbg("WriteBytes at 0x%08x %s" % (pos[fl],bytes))
+    if pos[fl]==0:
+        raise Exception("Invalid write position")
+    p = pack("%db" % len(bytes),*bytes)
+    contentStream.seek(pos[fl])
+    contentStream.write(p)
+    pos[fl] += len(bytes)
+def Write8s(fl,floats):
+    global pos,contentStreams
+    contentStream = contentStreams[fl]
+    #dbg("WriteBytes at 0x%08x %s" % (pos[fl],bytes))
+    if pos[fl]==0:
+        raise Exception("Invalid write position")
+    for i in range(0,len(floats)):
+        floats[i] = int(floats[i] / C8S)
+    WriteSBytes(fl,floats)
 def WriteShorts(fl,shorts):
     global pos,contentStreams
     contentStream = contentStreams[fl]

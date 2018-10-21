@@ -59,6 +59,7 @@ class MODVertexBuffer818904dc:
         self.uvs         = []
         self.weights     = []
         self.bones       = []
+        self.normalarray = []
         self.headerref   = headerref
         self.vertexcount = vertexcount
         for i in range(0,vertexcount):
@@ -66,9 +67,7 @@ class MODVertexBuffer818904dc:
                 self.vertarray.append([ReadBEFloat(headerref.fl),ReadBEFloat(headerref.fl),ReadBEFloat(headerref.fl)])
             else:
                 self.vertarray.append([ReadFloat(headerref.fl),ReadFloat(headerref.fl),ReadFloat(headerref.fl)])
-            Read8s(headerref.fl)
-            Read8s(headerref.fl)
-            Read8s(headerref.fl)
+            self.normalarray.append((Read8s(headerref.fl),Read8s(headerref.fl),Read8s(headerref.fl)))
             ReadByte(headerref.fl)
             ReadLong(headerref.fl)
             self.uvs.append((ReadHalfFloat(headerref.fl),1-ReadHalfFloat(headerref.fl)))
@@ -77,8 +76,8 @@ class MODVertexBuffer818904dc:
     def getStructSize():
         return 4+4+4+1+1+1+1+4+2+2+4
     @staticmethod
-    def getUVOFFAfterVert():
-        return 1+1+1+1+4
+    def getUVOFFAfterNormals():
+        return 1+4
     @staticmethod
     def getWeightsOFFAfterUVOFF():
         return -1
@@ -96,6 +95,7 @@ class MODVertexBufferf06033f:
         self.uvs         = []
         self.weights     = []
         self.bones       = []
+        self.normalarray = []
         self.headerref   = headerref
         self.vertexcount = vertexcount
         for i in range(0,vertexcount):
@@ -103,9 +103,7 @@ class MODVertexBufferf06033f:
                 self.vertarray.append([ReadBEFloat(headerref.fl),ReadBEFloat(headerref.fl),ReadBEFloat(headerref.fl)])
             else:
                 self.vertarray.append([ReadFloat(headerref.fl),ReadFloat(headerref.fl),ReadFloat(headerref.fl)])
-            Read8s(headerref.fl)
-            Read8s(headerref.fl)
-            Read8s(headerref.fl)
+            self.normalarray.append((Read8s(headerref.fl),Read8s(headerref.fl),Read8s(headerref.fl)))
             ReadByte(headerref.fl)
             ReadLong(headerref.fl)
             self.uvs.append((ReadHalfFloat(headerref.fl),1-ReadHalfFloat(headerref.fl)))
@@ -118,8 +116,8 @@ class MODVertexBufferf06033f:
     def getStructSize():
         return 4+4+4+1+1+1+1+4+2+2+4+1+ 1+1+1
     @staticmethod
-    def getUVOFFAfterVert():
-        return 1+1+1+1+4
+    def getUVOFFAfterNormals():
+        return 1+4
     @staticmethod
     def getWeightsOFFAfterUVOFF():
         return 0
@@ -140,6 +138,7 @@ class MODVertexBuffer81f58067:
         self.uvs         = []
         self.weights     = []
         self.bones       = []
+        self.normalarray = []
         self.headerref   = headerref
         self.vertexcount = vertexcount
         for i in range(0,vertexcount):
@@ -147,9 +146,7 @@ class MODVertexBuffer81f58067:
                 self.vertarray.append([ReadBEFloat(headerref.fl),ReadBEFloat(headerref.fl),ReadBEFloat(headerref.fl)])
             else:
                 self.vertarray.append([ReadFloat(headerref.fl),ReadFloat(headerref.fl),ReadFloat(headerref.fl)])
-            Read8s(headerref.fl)
-            Read8s(headerref.fl)
-            Read8s(headerref.fl)
+            self.normalarray.append((Read8s(headerref.fl),Read8s(headerref.fl),Read8s(headerref.fl)))
             ReadByte(headerref.fl)
             ReadLong(headerref.fl)
             self.uvs.append((ReadHalfFloat(headerref.fl),1-ReadHalfFloat(headerref.fl)))
@@ -165,8 +162,8 @@ class MODVertexBuffer81f58067:
     def getStructSize():
         return 4+4+4+1+1+1+1+4+2+2+4+1+1+1+1+1 +1+1+1+1+1+1+1
     @staticmethod
-    def getUVOFFAfterVert():
-        return 1+1+1+1+4
+    def getUVOFFAfterNormals():
+        return 1+4
     @staticmethod
     def getWeightsOFFAfterUVOFF():
         return 0
@@ -188,6 +185,7 @@ class MODVertexBufferf471fe45:
         self.uvs2        = []
         self.weights     = []
         self.bones       = []
+        self.normalarray = []
         self.headerref   = headerref
         self.vertexcount = vertexcount
         for i in range(0,vertexcount):
@@ -195,9 +193,7 @@ class MODVertexBufferf471fe45:
                 self.vertarray.append([ReadBEFloat(headerref.fl),ReadBEFloat(headerref.fl),ReadBEFloat(headerref.fl)])
             else:
                 self.vertarray.append([ReadFloat(headerref.fl),ReadFloat(headerref.fl),ReadFloat(headerref.fl)])
-            Read8s(headerref.fl)
-            Read8s(headerref.fl)
-            Read8s(headerref.fl)
+            self.normalarray.append((Read8s(headerref.fl),Read8s(headerref.fl),Read8s(headerref.fl)))
             ReadByte(headerref.fl)
             ReadLong(headerref.fl)
             self.uvs.append((ReadHalfFloat(headerref.fl),1-ReadHalfFloat(headerref.fl)))
@@ -211,8 +207,8 @@ class MODVertexBufferf471fe45:
     def getStructSize():
         return 4+4+4+1+1+1+1+4+2+2+2+2+4+1+1+1+1
     @staticmethod
-    def getUVOFFAfterVert():
-        return 1+1+1+1+4
+    def getUVOFFAfterNormals():
+        return 1+4
     @staticmethod
     def getWeightsOFFAfterUVOFF():
         return 0
@@ -233,6 +229,7 @@ class MODVertexBuffer3c730760:
         self.uvs         = []
         self.weights     = []
         self.bones       = []
+        self.normalarray = []
         self.headerref   = headerref
         self.vertexcount = vertexcount
         for i in range(0,vertexcount):
@@ -240,9 +237,7 @@ class MODVertexBuffer3c730760:
                 self.vertarray.append([ReadBEFloat(headerref.fl),ReadBEFloat(headerref.fl),ReadBEFloat(headerref.fl)])
             else:
                 self.vertarray.append([ReadFloat(headerref.fl),ReadFloat(headerref.fl),ReadFloat(headerref.fl)])
-            Read8s(headerref.fl)
-            Read8s(headerref.fl)
-            Read8s(headerref.fl)
+            self.normalarray.append((Read8s(headerref.fl),Read8s(headerref.fl),Read8s(headerref.fl)))
             ReadByte(headerref.fl)
             ReadLong(headerref.fl)
             self.uvs.append((ReadHalfFloat(headerref.fl),1-ReadHalfFloat(headerref.fl)))
@@ -261,8 +256,8 @@ class MODVertexBuffer3c730760:
     def getStructSize():
         return 4+4+4+1+1+1+1+4+2+2+4+1+1+1+1+1+1+1+1
     @staticmethod
-    def getUVOFFAfterVert():
-        return 1+1+1+1+4
+    def getUVOFFAfterNormals():
+        return 1+4
     @staticmethod
     def getWeightsOFFAfterUVOFF():
         return 0
@@ -284,6 +279,7 @@ class MODVertexBufferb2fc0083:
         self.uvs         = []
         self.weights     = []
         self.bones       = []
+        self.normalarray = []
         self.headerref   = headerref
         self.vertexcount = vertexcount
         for i in range(0,vertexcount):
@@ -291,9 +287,7 @@ class MODVertexBufferb2fc0083:
                 self.vertarray.append([ReadBEFloat(headerref.fl),ReadBEFloat(headerref.fl),ReadBEFloat(headerref.fl)])
             else:
                 self.vertarray.append([ReadFloat(headerref.fl),ReadFloat(headerref.fl),ReadFloat(headerref.fl)])
-            Read8s(headerref.fl)
-            Read8s(headerref.fl)
-            Read8s(headerref.fl)
+            self.normalarray.append((Read8s(headerref.fl),Read8s(headerref.fl),Read8s(headerref.fl)))
             ReadByte(headerref.fl)
             ReadLong(headerref.fl)
             self.uvs.append((ReadHalfFloat(headerref.fl),1-ReadHalfFloat(headerref.fl)))
@@ -302,8 +296,8 @@ class MODVertexBufferb2fc0083:
     def getStructSize():
         return 4+4+4+1+1+1+1+4+2+2+4
     @staticmethod
-    def getUVOFFAfterVert():
-        return 1+1+1+1+4
+    def getUVOFFAfterNormals():
+        return 1+4
     @staticmethod
     def getWeightsOFFAfterUVOFF():
         return -1
@@ -324,6 +318,7 @@ class MODVertexBuffer366995a7:
         self.uvs         = []
         self.weights     = []
         self.bones       = []
+        self.normalarray = []
         self.headerref   = headerref
         self.vertexcount = vertexcount
         for i in range(0,vertexcount):
@@ -331,9 +326,7 @@ class MODVertexBuffer366995a7:
                 self.vertarray.append([ReadBEFloat(headerref.fl),ReadBEFloat(headerref.fl),ReadBEFloat(headerref.fl)])
             else:
                 self.vertarray.append([ReadFloat(headerref.fl),ReadFloat(headerref.fl),ReadFloat(headerref.fl)])
-            Read8s(headerref.fl)
-            Read8s(headerref.fl)
-            Read8s(headerref.fl)
+            self.normalarray.append((Read8s(headerref.fl),Read8s(headerref.fl),Read8s(headerref.fl)))
             ReadByte(headerref.fl)
             ReadLong(headerref.fl)
             self.uvs.append((ReadHalfFloat(headerref.fl),1-ReadHalfFloat(headerref.fl)))
@@ -349,8 +342,8 @@ class MODVertexBuffer366995a7:
     def getStructSize():
         return 4+4+4+1+1+1+1+4+2+2+4+1+1+1+1 + 8+4
     @staticmethod
-    def getUVOFFAfterVert():
-        return 1+1+1+1+4
+    def getUVOFFAfterNormals():
+        return 1+4
     @staticmethod
     def getWeightsOFFAfterUVOFF():
         return 0
@@ -372,6 +365,7 @@ class MODVertexBufferc9690ab8:
         self.uvs         = []
         self.weights     = []
         self.bones       = []
+        self.normalarray = []
         self.headerref   = headerref
         self.vertexcount = vertexcount
         for i in range(0,vertexcount):
@@ -379,9 +373,7 @@ class MODVertexBufferc9690ab8:
                 self.vertarray.append([ReadBEFloat(headerref.fl),ReadBEFloat(headerref.fl),ReadBEFloat(headerref.fl)])
             else:
                 self.vertarray.append([ReadFloat(headerref.fl),ReadFloat(headerref.fl),ReadFloat(headerref.fl)])
-            Read8s(headerref.fl)
-            Read8s(headerref.fl)
-            Read8s(headerref.fl)
+            self.normalarray.append((Read8s(headerref.fl),Read8s(headerref.fl),Read8s(headerref.fl)))
             ReadByte(headerref.fl)
             ReadLong(headerref.fl)
             ReadHalfFloat(headerref.fl)
@@ -405,8 +397,8 @@ class MODVertexBufferc9690ab8:
     def getStructSize():
         return 4+4+4+1+1+1+1+4+2+2+2+2+1+1+1+1 +1+1+1+1+1+1+1+1
     @staticmethod
-    def getUVOFFAfterVert():
-        return 1+1+1+1+4
+    def getUVOFFAfterNormals():
+        return 1+4
     @staticmethod
     def getWeightsOFFAfterUVOFF():
         return -1
@@ -428,6 +420,7 @@ class MODVertexBuffer5e7f202d:
         self.uvs         = []
         self.weights     = []
         self.bones       = []
+        self.normalarray = []
         self.headerref   = headerref
         self.vertexcount = vertexcount
         for i in range(0,vertexcount):
@@ -435,9 +428,7 @@ class MODVertexBuffer5e7f202d:
                 self.vertarray.append([ReadBEFloat(headerref.fl),ReadBEFloat(headerref.fl),ReadBEFloat(headerref.fl)])
             else:
                 self.vertarray.append([ReadFloat(headerref.fl),ReadFloat(headerref.fl),ReadFloat(headerref.fl)])
-            Read8s(headerref.fl)
-            Read8s(headerref.fl)
-            Read8s(headerref.fl)
+            self.normalarray.append((Read8s(headerref.fl),Read8s(headerref.fl),Read8s(headerref.fl)))
             ReadByte(headerref.fl)
             ReadLong(headerref.fl)
             self.uvs.append((ReadHalfFloat(headerref.fl),1-ReadHalfFloat(headerref.fl)))
@@ -446,8 +437,8 @@ class MODVertexBuffer5e7f202d:
     def getStructSize():
         return 4+4+4+1+1+1+1+4+2+2+4
     @staticmethod
-    def getUVOFFAfterVert():
-        return 1+1+1+1+4
+    def getUVOFFAfterNormals():
+        return 1+4
     @staticmethod
     def getWeightsOFFAfterUVOFF():
         return -1
@@ -468,6 +459,7 @@ class MODVertexBufferd829702c:
         self.uvs         = []
         self.weights     = []
         self.bones       = []
+        self.normalarray = []
         self.headerref   = headerref
         self.vertexcount = vertexcount
         for i in range(0,vertexcount):
@@ -475,9 +467,7 @@ class MODVertexBufferd829702c:
                 self.vertarray.append([ReadBEFloat(headerref.fl),ReadBEFloat(headerref.fl),ReadBEFloat(headerref.fl)])
             else:
                 self.vertarray.append([ReadFloat(headerref.fl),ReadFloat(headerref.fl),ReadFloat(headerref.fl)])
-            Read8s(headerref.fl)
-            Read8s(headerref.fl)
-            Read8s(headerref.fl)
+            self.normalarray.append((Read8s(headerref.fl),Read8s(headerref.fl),Read8s(headerref.fl)))
             ReadByte(headerref.fl)
             ReadLong(headerref.fl)
             self.uvs.append((ReadHalfFloat(headerref.fl),1-ReadHalfFloat(headerref.fl)))
@@ -485,8 +475,8 @@ class MODVertexBufferd829702c:
     def getStructSize():
         return 4+4+4+1+1+1+1+4+2+2
     @staticmethod
-    def getUVOFFAfterVert():
-        return 1+1+1+1+4
+    def getUVOFFAfterNormals():
+        return 1+4
     @staticmethod
     def getWeightsOFFAfterUVOFF():
         return -1
@@ -507,6 +497,7 @@ class MODVertexBufferb8e69244:
         self.uvs         = []
         self.weights     = []
         self.bones       = []
+        self.normalarray = []
         self.headerref   = headerref
         self.vertexcount = vertexcount
         for i in range(0,vertexcount):
@@ -514,9 +505,7 @@ class MODVertexBufferb8e69244:
                 self.vertarray.append([ReadBEFloat(headerref.fl),ReadBEFloat(headerref.fl),ReadBEFloat(headerref.fl)])
             else:
                 self.vertarray.append([ReadFloat(headerref.fl),ReadFloat(headerref.fl),ReadFloat(headerref.fl)])
-            Read8s(headerref.fl)
-            Read8s(headerref.fl)
-            Read8s(headerref.fl)
+            self.normalarray.append((Read8s(headerref.fl),Read8s(headerref.fl),Read8s(headerref.fl)))
             ReadByte(headerref.fl)
             ReadLong(headerref.fl)
             self.uvs.append((ReadHalfFloat(headerref.fl),1-ReadHalfFloat(headerref.fl)))
@@ -539,8 +528,8 @@ class MODVertexBufferb8e69244:
     def getStructSize():
         return 4+4+4+1+1+1+1+4+2+2+4+1+1+1+1+1*8+4 +1+1+1+1
     @staticmethod
-    def getUVOFFAfterVert():
-        return 1+1+1+1+4
+    def getUVOFFAfterNormals():
+        return 1+4
     @staticmethod
     def getWeightsOFFAfterUVOFF():
         return 0
