@@ -233,13 +233,13 @@ def Write8s(fl,floats):
     #dbg("WriteBytes at 0x%08x %s" % (pos[fl],bytes))
     if pos[fl]==0:
         raise Exception("Invalid write position")
+    floats = list(floats)
     for i in range(0,len(floats)):
         floats[i] = int(floats[i] / C8S)
         if floats[i]>127:
             floats[i] = 127
         if floats[i]<-128:
             floats[i] = -128
-
     WriteSBytes(fl,floats)
 def WriteShorts(fl,shorts):
     global pos,contentStreams

@@ -579,6 +579,7 @@ class ExportMOD3(Operator, ImportHelper):
         WriteLongs(fl,[unknOffset])
 
     def writeBones(self,headerref,fl,ArmatureName):
+        dbg("writeBones %s" % ArmatureName)
         bpy.context.area.type = 'VIEW_3D'
         bpy.ops.view3d.snap_cursor_to_center()
         scene = bpy.context.scene
@@ -1225,19 +1226,23 @@ class ImportMOD3(Operator, ImportHelper):
                 b = ReadByte(fl)
                 if b != 0:
                     by = chr(b)
-                    tex = "%s%s"  % (tex,by)
-            texpath = "%s\\%s.tex" % (CHUNK_PATH,tex)
+                    tex = "%s%s" % (tex,by)
+            texname = "%s.tex" % tex
+            texpath = "%s\\%s" % (os.path.dirname(filepath),os.path.basename(texname))
+            dbg("testing local path %s" % texpath)
             if not os.path.isfile(texpath):
-                chunk_folders = ["chunk0","chunk1","chunk2"]
-                for c in chunk_folders:
-                    try:
-                        if(CHUNK_PATH.index(c)>0):
-                            for n in range(0,3):
-                                texpath = "%s\\%s.tex" % (CHUNK_PATH.replace(c,"chunk%d" % n),tex)
-                                if os.path.isfile(texpath):
-                                    break
-                    except ValueError as e:
-                        pass
+                texpath = "%s\\%s" % (CHUNK_PATH,texname)
+                if not os.path.isfile(texpath):
+                    chunk_folders = ["chunk0","chunk1","chunk2"]
+                    for c in chunk_folders:
+                        try:
+                            if(CHUNK_PATH.index(c)>0):
+                                for n in range(0,3):
+                                    texpath = "%s\\%s.tex" % (CHUNK_PATH.replace(c,"chunk%d" % n),tex)
+                                    if os.path.isfile(texpath):
+                                        break
+                        except ValueError as e:
+                            pass
 
             dbg("importing texture: %s" % (texpath))
             doImportTex(texpath)
