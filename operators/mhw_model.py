@@ -26,10 +26,6 @@ ENUM_LAYER_MODE_PARTS = (LAYER_MODE_PARTS,'mesh parts','Try to move mesh parts e
 ENUM_LAYER_MODE_LOD = (LAYER_MODE_LOD,'lod-level','Try group mesh parts based on their lod-level evenly accross the layers')
 
 
-
-content = bytes("","UTF-8")
-contentStream = None
-
 import binascii
 import mathutils 
 import math
@@ -223,7 +219,7 @@ class MeshPart:
         BOFF = meshPart.VertexSub+meshPart.FaceAdd
         START = VOFF+meshPart.BlockSize*BOFF
         RES = START+self.VertexCount*cls.getStructSize()
-        dbg("getVertexRegionEnd %08x [START=%08x]" % (RES,START))
+        dbg("#%d getVertexRegionEnd %08x [START=%08x,VertexCount=%d]" % (self.uid,RES,START,self.VertexCount))
         return RES
     def modifyVertexCount(self,parts,newVertexCount):
         dbg("modifyVertexCount %d [oldVertexCount: %d]" % (newVertexCount,self.VertexCount))
@@ -249,7 +245,9 @@ class MeshPart:
             i += 1
         oldVertexCount = self.VertexCount
         self.VertexCount = newVertexCount
-        self.headerref.FaceOffset += cls.getStructSize()*(newVertexCount-self.VertexCount)
+        dbg("FaceOffset before %08x" % self.headerref.FaceOffset)
+        self.headerref.FaceOffset += cls.getStructSize()*(newVertexCount-oldVertexCount)
+        dbg("FaceOffset after %08x" % self.headerref.FaceOffset)
         Seek(fl,self.MeshPartOffset+0x02)
         WriteLongs(fl,[self.VertexCount])
         appendEmptyVertices = cls.appendEmptyVertices
@@ -262,7 +260,8 @@ class MeshPart:
         WriteLongs(fl,[self.VertexSub])
     def modifyFaceCount(self,parts,newFaceCount):
         newFaceCount *= 3
-        dbg("modifyFaceCount %d [oldFaceCount: %d]" % (newFaceCount,self.FaceCount))
+        dbg("#%d modifyFaceCount %d [oldFaceCount: %d] [headerRef.FaceOffset: %08x , self.FaceOffset: %08x]" %
+            (self.uid, newFaceCount, self.FaceCount, self.headerref.FaceOffset, self.FaceOffset))
         if newFaceCount==self.FaceCount:
             return
         fl = self.headerref.fl
@@ -273,18 +272,18 @@ class MeshPart:
             #    p.writeVertexOffset(p.VertexOffset+3*2*(newFaceCount-self.FaceCount))
             if headerref.FaceOffset+p.FaceOffset > headerref.FaceOffset+self.FaceOffset:
                 p.writeFaceOffset(p.FaceOffset+(newFaceCount-self.FaceCount))
-        self.appendEmptyFaces(headerref.FaceOffset+self.FaceOffset*2,int((newFaceCount-self.FaceCount)/3))
+        self.appendEmptyFaces(headerref.FaceOffset+self.FaceOffset*2, int(self.FaceCount/3), int((newFaceCount-self.FaceCount)/3))
         self.FaceCount = newFaceCount
         Seek(fl,self.MeshPartOffset+0x20)
         WriteLongs(fl,[self.FaceCount])
-    def appendEmptyFaces(self,FaceOffset,FaceCount):
-        dbg("appendEmptyFaces %08x %d" % (FaceOffset,FaceCount))
+    def appendEmptyFaces(self,FaceOffset,oldFaceCount,diffFaceCount):
+        dbg("appendEmptyFaces %08x %d %d" % (FaceOffset,oldFaceCount,diffFaceCount))
         fl = self.headerref.fl
-        if(FaceCount > 0):
-            InsertEmptyBytes(fl,FaceOffset+FaceCount*2*3,FaceCount*2*3)
-        elif(FaceCount < 0):
-            SubFaceCount = 0-FaceCount
-            DeleteBytes(fl,FaceOffset-SubFaceCount*2*3,SubFaceCount*2*3)
+        if(diffFaceCount > 0):
+            InsertEmptyBytes(fl,FaceOffset+diffFaceCount*2*3,diffFaceCount*2*3)
+        elif(diffFaceCount < 0):
+            SubFaceCount = 0-diffFaceCount
+            DeleteBytes(fl,FaceOffset+oldFaceCount*2*3-SubFaceCount*2*3,SubFaceCount*2*3)
     def writeVertexOffset(self,newOffset):
         dbg("writeVertexOffset %08x [%08x]" % (newOffset,self.MeshPartOffset+0x14))
         if newOffset < 0:

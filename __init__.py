@@ -15,38 +15,41 @@ bl_info = {
     "warning": "commit {COMMIT}"
 }
  
- 
-import base64
-import zlib 
-import bpy
+# no blender imports here ... else basic tests won't work!
 
-from .operators.mhw_model import ImportMOD3
-from .operators.mhw_model import menu_func_import as mhw_model_menu_func_import
-from .operators.mhw_model import menu_func_export as mhw_model_menu_func_export
-from .operators.mhw_texture import menu_func_import as mhw_texture_menu_func_export
-from .operators.mhw_model import ExportMOD3
-from .operators.mhw_texture import ImportTEX
 
 def register():
+    import bpy
+    from .operators.mhw_model import ImportMOD3
+    from .operators.mhw_model import ExportMOD3
+    from .operators.mhw_model import menu_func_import as mhw_model_menu_func_import
+    from .operators.mhw_model import menu_func_export as mhw_model_menu_func_export
+    from .operators.mhw_texture import menu_func_import as mhw_texture_menu_func_export
+    from .operators.mhw_texture import ImportTEX
     bpy.utils.register_class(ImportMOD3)
     bpy.utils.register_class(ExportMOD3)
     bpy.utils.register_class(ImportTEX)
     bpy.types.INFO_MT_file_import.append(mhw_model_menu_func_import)
     bpy.types.INFO_MT_file_export.append(mhw_model_menu_func_export)
     bpy.types.INFO_MT_file_import.append(mhw_texture_menu_func_export)
- 
- 
+
 def unregister():
+    import bpy
+    from .operators.mhw_model import ImportMOD3
+    from .operators.mhw_model import ExportMOD3
+    from .operators.mhw_model import menu_func_import as mhw_model_menu_func_import
+    from .operators.mhw_model import menu_func_export as mhw_model_menu_func_export
+    from .operators.mhw_texture import menu_func_import as mhw_texture_menu_func_export
+    from .operators.mhw_texture import ImportTEX
     bpy.utils.unregister_class(ImportMOD3)
     bpy.utils.unregister_class(ExportMOD3)
     bpy.utils.unregister_class(ImportTEX)
     bpy.types.INFO_MT_file_import.remove(mhw_model_menu_func_import)
     bpy.types.INFO_MT_file_export.remove(mhw_model_menu_func_export)
     bpy.types.INFO_MT_file_import.remove(mhw_texture_menu_func_export)
- 
 
-    
 if __name__ == "__main__":
+
     try:
         unregister()
     except:

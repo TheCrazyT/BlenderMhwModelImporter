@@ -43,13 +43,13 @@ def calcBonesAndWeights(cnt,weightVal,weightVal2,bns):
 
     
     return calcBonesAndWeightsArr(cnt,wt,bns)
-def basicAppendEmptyVertices(cls,fl,VertexOffset,oldVertexCount,addVertexCount):
-    dbg("basicAppendEmptyVertices %08x %d %d" % (VertexOffset,oldVertexCount,addVertexCount))
+def basicAppendEmptyVertices(cls,fl,VertexRegionEnd,oldVertexCount,addVertexCount):
+    dbg("basicAppendEmptyVertices %08x %d %d" % (VertexRegionEnd,oldVertexCount,addVertexCount))
     if(addVertexCount > 0):
-        InsertEmptyBytes(fl,VertexOffset+oldVertexCount*cls.getStructSize(),cls.getStructSize()*addVertexCount)
+        InsertEmptyBytes(fl,VertexRegionEnd,cls.getStructSize()*addVertexCount)
     elif(addVertexCount < 0):
         subVertexCount = 0-addVertexCount
-        DeleteBytes(fl,VertexOffset+(oldVertexCount-subVertexCount)*cls.getStructSize(),cls.getStructSize()*subVertexCount)
+        DeleteBytes(fl,VertexRegionEnd-subVertexCount*cls.getStructSize(),cls.getStructSize()*subVertexCount)
 
 
 class MODVertexBuffer818904dc:
@@ -85,8 +85,8 @@ class MODVertexBuffer818904dc:
     def getBonesOFFAfterWeightsOFF():
         return -1
     @classmethod
-    def appendEmptyVertices(cls,fl,VertexOffset,oldVertexCount,addVertexCount):
-        basicAppendEmptyVertices(cls,fl,VertexOffset,oldVertexCount,addVertexCount)
+    def appendEmptyVertices(cls,fl,VertexRegionEnd,oldVertexCount,addVertexCount):
+        basicAppendEmptyVertices(cls,fl,VertexRegionEnd,oldVertexCount,addVertexCount)
 
 class MODVertexBufferf06033f:
     def __init__(self,headerref,vertexcount):
@@ -128,8 +128,8 @@ class MODVertexBufferf06033f:
     def getBoneMode():
         return WEIGHTS3_BONES4
     @classmethod
-    def appendEmptyVertices(cls,fl,VertexOffset,oldVertexCount,addVertexCount):
-        basicAppendEmptyVertices(cls,fl,VertexOffset,oldVertexCount,addVertexCount)
+    def appendEmptyVertices(cls,fl,VertexRegionEnd,oldVertexCount,addVertexCount):
+        basicAppendEmptyVertices(cls,fl,VertexRegionEnd,oldVertexCount,addVertexCount)
        
 class MODVertexBuffer81f58067:
     def __init__(self,headerref,vertexcount):
@@ -174,8 +174,8 @@ class MODVertexBuffer81f58067:
     def getBoneMode():
         return WEIGHTS7_BONES8
     @classmethod
-    def appendEmptyVertices(cls,fl,VertexOffset,oldVertexCount,addVertexCount):
-        basicAppendEmptyVertices(cls,fl,VertexOffset,oldVertexCount,addVertexCount)
+    def appendEmptyVertices(cls,fl,VertexRegionEnd,oldVertexCount,addVertexCount):
+        basicAppendEmptyVertices(cls,fl,VertexRegionEnd,oldVertexCount,addVertexCount)
       
 class MODVertexBufferf471fe45:
     def __init__(self,headerref,vertexcount):
@@ -219,8 +219,8 @@ class MODVertexBufferf471fe45:
     def getBoneMode():
         return WEIGHTS3_BONES4
     @classmethod
-    def appendEmptyVertices(cls,fl,VertexOffset,oldVertexCount,addVertexCount):
-        basicAppendEmptyVertices(cls,fl,VertexOffset,oldVertexCount,addVertexCount)
+    def appendEmptyVertices(cls,fl,VertexRegionEnd,oldVertexCount,addVertexCount):
+        basicAppendEmptyVertices(cls,fl,VertexRegionEnd,oldVertexCount,addVertexCount)
 
 class MODVertexBuffer3c730760:
     def __init__(self,headerref,vertexcount):
@@ -268,8 +268,8 @@ class MODVertexBuffer3c730760:
     def getBoneMode():
         return WEIGHTS3_BONES4
     @classmethod
-    def appendEmptyVertices(cls,fl,VertexOffset,oldVertexCount,addVertexCount):
-        basicAppendEmptyVertices(cls,fl,VertexOffset,oldVertexCount,addVertexCount)
+    def appendEmptyVertices(cls,fl,VertexRegionEnd,oldVertexCount,addVertexCount):
+        basicAppendEmptyVertices(cls,fl,VertexRegionEnd,oldVertexCount,addVertexCount)
 
 class MODVertexBufferb2fc0083:
     def __init__(self,headerref,vertexcount):
@@ -308,8 +308,8 @@ class MODVertexBufferb2fc0083:
     def getBoneMode():
         return WEIGHTS0_BONES0
     @classmethod
-    def appendEmptyVertices(cls,fl,VertexOffset,oldVertexCount,addVertexCount):
-        basicAppendEmptyVertices(cls,fl,VertexOffset,oldVertexCount,addVertexCount)
+    def appendEmptyVertices(cls,fl,VertexRegionEnd,oldVertexCount,addVertexCount):
+        basicAppendEmptyVertices(cls,fl,VertexRegionEnd,oldVertexCount,addVertexCount)
        
 class MODVertexBuffer366995a7:
     def __init__(self,headerref,vertexcount):
@@ -354,8 +354,8 @@ class MODVertexBuffer366995a7:
     def getBoneMode():
         return WEIGHTS7_BONES8
     @classmethod
-    def appendEmptyVertices(cls,fl,VertexOffset,oldVertexCount,addVertexCount):
-        basicAppendEmptyVertices(cls,fl,VertexOffset,oldVertexCount,addVertexCount)
+    def appendEmptyVertices(cls,fl,VertexRegionEnd,oldVertexCount,addVertexCount):
+        basicAppendEmptyVertices(cls,fl,VertexRegionEnd,oldVertexCount,addVertexCount)
         
 class MODVertexBufferc9690ab8:
     def __init__(self,headerref,vertexcount):
@@ -409,8 +409,8 @@ class MODVertexBufferc9690ab8:
     def getBoneMode():
         return WEIGHTS7_BONES8
     @classmethod
-    def appendEmptyVertices(cls,fl,VertexOffset,oldVertexCount,addVertexCount):
-        basicAppendEmptyVertices(cls,fl,VertexOffset,oldVertexCount,addVertexCount)
+    def appendEmptyVertices(cls,fl,VertexRegionEnd,oldVertexCount,addVertexCount):
+        basicAppendEmptyVertices(cls,fl,VertexRegionEnd,oldVertexCount,addVertexCount)
         
 class MODVertexBuffer5e7f202d:
     def __init__(self,headerref,vertexcount):
@@ -449,8 +449,8 @@ class MODVertexBuffer5e7f202d:
     def getBoneMode():
         return WEIGHTS0_BONES0
     @classmethod
-    def appendEmptyVertices(cls,fl,VertexOffset,oldVertexCount,addVertexCount):
-        basicAppendEmptyVertices(cls,fl,VertexOffset,oldVertexCount,addVertexCount)
+    def appendEmptyVertices(cls,fl,VertexRegionEnd,oldVertexCount,addVertexCount):
+        basicAppendEmptyVertices(cls,fl,VertexRegionEnd,oldVertexCount,addVertexCount)
        
 class MODVertexBufferd829702c:
     def __init__(self,headerref,vertexcount):
@@ -487,8 +487,8 @@ class MODVertexBufferd829702c:
     def getBoneMode():
         return WEIGHTS0_BONES0  
     @classmethod
-    def appendEmptyVertices(cls,fl,VertexOffset,oldVertexCount,addVertexCount):
-        basicAppendEmptyVertices(cls,fl,VertexOffset,oldVertexCount,addVertexCount)
+    def appendEmptyVertices(cls,fl,VertexRegionEnd,oldVertexCount,addVertexCount):
+        basicAppendEmptyVertices(cls,fl,VertexRegionEnd,oldVertexCount,addVertexCount)
         
 class MODVertexBufferb8e69244:
     def __init__(self,headerref,vertexcount):
@@ -540,8 +540,8 @@ class MODVertexBufferb8e69244:
     def getBoneMode():
         return WEIGHTS7_BONES8
     @classmethod
-    def appendEmptyVertices(cls,fl,VertexOffset,oldVertexCount,addVertexCount):
-        basicAppendEmptyVertices(cls,fl,VertexOffset,oldVertexCount,addVertexCount)
+    def appendEmptyVertices(cls,fl,VertexRegionEnd,oldVertexCount,addVertexCount):
+        basicAppendEmptyVertices(cls,fl,VertexRegionEnd,oldVertexCount,addVertexCount)
 
 MODVertexBuffera5104ca0 = MODVertexBuffer5e7f202d
 MODVertexBufferf637401c = MODVertexBufferf06033f

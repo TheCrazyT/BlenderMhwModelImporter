@@ -1,4 +1,6 @@
 DEBUG = True
+CREATE_FILE_SNAPSHOTS = True
+SNAPSHOT_FMT = "d:\\tmp\\snapshots\\%05d.dat"
 def dbg_init():
     global DEBUG
     if DEBUG:

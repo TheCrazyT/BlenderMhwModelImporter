@@ -24,7 +24,11 @@ install:
 script:
 - mkdir -p build/${SIMPLE_VERSION}/
 - sed -i s/True/False/ dbg.py
-- VERSION=${SIMPLE_VERSION} && COMMIT=$(git log --format="%H" -n 1) && BRANCH_NAME=$(git branch | grep \* | cut -d ' ' -f2) && sed -i s/\{VERSION\}/${VERSION}/ __init__.py  && sed -i s/\{COMMIT\}/${COMMIT}/ __init__.py  && sed -i s/\{VERSION\}/${VERSION}-${COMMIT}/ start.bat
+- VERSION=${SIMPLE_VERSION} && COMMIT=$(git log --format="%H" -n 1) &&  \
+  BRANCH_NAME=$(git branch | grep \* | cut -d ' ' -f2) &&  \
+  sed -i s/\{VERSION\}/${VERSION}/ __init__.py  &&  \
+  sed -i s/\{COMMIT\}/${COMMIT}/ __init__.py  &&  \
+  sed -i s/\{VERSION\}/${VERSION}-${COMMIT}/ start.bat
 - mkdir BlenderMhwModelImporter
 - cp -R  __init__.py dbg.py config.py operators common vertexbuffers start.bat start.py Scarlet ./BlenderMhwModelImporter
 - tar -czf build/${SIMPLE_VERSION}/BlenderMhwModelImporter.tar.gz BlenderMhwModelImporter

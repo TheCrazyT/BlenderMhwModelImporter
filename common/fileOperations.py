@@ -1,9 +1,11 @@
 import binascii
+import os
 from io import BytesIO
 from struct import pack,unpack
 from os import SEEK_SET,SEEK_CUR,SEEK_END
-from ..dbg import dbg
+from ..dbg import dbg,CREATE_FILE_SNAPSHOTS,SNAPSHOT_FMT
 C8S = 0.0078125
+SNAPSHOT_ID = 0
 pos = {}
 contentStreams = []
 def getContentStreamValue(fl):
@@ -267,25 +269,59 @@ def getPos(fl):
         raise Exception("invalid pos detected! [%d]" % pos[fl])
     return pos[fl]
 def InsertEmptyBytes(fl,offset,count):
-    global pos,contentStreams
+    global pos,contentStreams,SNAPSHOT_ID
     contentStream = contentStreams[fl]
     dbg("InsertEmptyBytes %08x %d" % (offset,count))
+    if(CREATE_FILE_SNAPSHOTS):
+        if(os.path.isdir(os.path.dirname(SNAPSHOT_FMT))):
+            SNAPSHOT_ID += 1
+            dbg("file snapshot: %s" % (SNAPSHOT_FMT % SNAPSHOT_ID))
+            f = open(SNAPSHOT_FMT % SNAPSHOT_ID, "wb")
+            contentStream.seek(0)
+            f.write(contentStream.read())
+            f.close()
     contentStream2 = BytesIO(b'')
     contentStream.seek(0)
     contentStream2.write(contentStream.read(offset))
     contentStream2.write(b'\0'*count)
     contentStream2.write(contentStream.read())
     contentStreams[fl] = contentStream2
+    if(CREATE_FILE_SNAPSHOTS):
+        if(os.path.isdir(os.path.dirname(SNAPSHOT_FMT))):
+            SNAPSHOT_ID += 1
+            dbg("file snapshot: %s" % (SNAPSHOT_FMT % SNAPSHOT_ID))
+            f = open(SNAPSHOT_FMT % SNAPSHOT_ID, "wb")
+            contentStream2.seek(0)
+            f.write(contentStream2.read())
+            f.close()
+    contentStream2.seek(0)
 def DeleteBytes(fl,offset,count):
-    global pos,contentStreams
+    global pos,contentStreams,SNAPSHOT_ID
     contentStream = contentStreams[fl]
     dbg("DeleteBytes %08x %d" % (offset,count))
+    if(CREATE_FILE_SNAPSHOTS):
+        if(os.path.isdir(os.path.dirname(SNAPSHOT_FMT))):
+            SNAPSHOT_ID += 1
+            dbg("file snapshot: %s" % (SNAPSHOT_FMT % SNAPSHOT_ID))
+            f = open(SNAPSHOT_FMT % SNAPSHOT_ID, "wb")
+            contentStream.seek(0)
+            f.write(contentStream.read())
+            f.close()
     contentStream2 = BytesIO(b'')
     contentStream.seek(0)
     contentStream2.write(contentStream.read(offset))
-    contentStream.seek(count,SEEK_CUR)
+    contentStream.seek(count, SEEK_CUR)
     contentStream2.write(contentStream.read())
     contentStreams[fl] = contentStream2
+    if(CREATE_FILE_SNAPSHOTS):
+        if(os.path.isdir(os.path.dirname(SNAPSHOT_FMT))):
+            SNAPSHOT_ID += 1
+            dbg("file snapshot: %s" % (SNAPSHOT_FMT % SNAPSHOT_ID))
+            f = open(SNAPSHOT_FMT % SNAPSHOT_ID, "wb")
+            contentStream2.seek(0)
+            f.write(contentStream2.read())
+            f.close()
+    contentStream2.seek(0)
 def Seek(fl,offset):
     global pos
     pos[fl]=offset
