@@ -957,7 +957,12 @@ class ImportMOD3(Operator, ImportHelper):
                         w2 = weights[vi][1]
                     if lw > 2:
                         w3 = weights[vi][2]
-                    weightVal = int(w1 / WEIGHT_MULTIPLIER) + (int(w2/ WEIGHT_MULTIPLIER)<<10) + (int(w3/ WEIGHT_MULTIPLIER)<<20)
+                    if lw > 3:
+                        w4 = weights[vi][3]
+                    w1 = min(int(round(w1 / WEIGHT_MULTIPLIER)), 1023)
+                    w2 = min(int(round(w2 / WEIGHT_MULTIPLIER)), 1023) << 10
+                    w3 = min(int(round(w3 / WEIGHT_MULTIPLIER)), 1023) << 20
+                    weightVal = w1 + w2 + w3
                     WriteLongs(fl,[weightVal])
                     fseek(fl,bonesOff)
                     
@@ -992,10 +997,17 @@ class ImportMOD3(Operator, ImportHelper):
                         w6 = weights[vi][5]
                     if lw > 6:
                         w7 = weights[vi][6]
-                    weightVal = int(w1 / WEIGHT_MULTIPLIER) + (int(w2/ WEIGHT_MULTIPLIER)<<10) + (int(w3/ WEIGHT_MULTIPLIER)<<20)
+                    w1 = min(int(round(w1 / WEIGHT_MULTIPLIER)), 1023)
+                    w2 = min(int(round(w2 / WEIGHT_MULTIPLIER)), 1023) << 10
+                    w3 = min(int(round(w3 / WEIGHT_MULTIPLIER)), 1023) << 20
+                    w4 = min(int(round(w4 / WEIGHT_MULTIPLIER2)), 0xFF)
+                    w5 = min(int(round(w5 / WEIGHT_MULTIPLIER2)) , 0xFF)
+                    w6 = min(int(round(w6 / WEIGHT_MULTIPLIER2)) , 0xFF)
+                    w7 = min(int(round(w7 / WEIGHT_MULTIPLIER2)) , 0xFF)
+                    weightVal = w1 + w2 + w3
                     #dbg("Write weights for vertex %08x : %s" % (getPos(fl),[w1,w2,w3,w4,w5,w6,w7]))
                     WriteLongs(fl,[weightVal])
-                    WriteBytes(fl,[int(w4 / WEIGHT_MULTIPLIER2) & 0xFF,int(w5 / WEIGHT_MULTIPLIER2) & 0xFF,int(w6 / WEIGHT_MULTIPLIER2) & 0xFF,int(w7 / WEIGHT_MULTIPLIER2) & 0xFF])
+                    WriteBytes(fl,[w4,w5,w6,w7])
                     
                     fseek(fl,bonesOff)
                     boneList = bones[vi]

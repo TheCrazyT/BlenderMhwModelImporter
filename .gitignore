@@ -2,3 +2,4 @@ __pycache__
 *.pyproj
 .vs
 *.sln
+.spyproject

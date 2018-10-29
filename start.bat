@@ -25,5 +25,5 @@ if exist %BLENDER_PATH1% (
 )
 echo current folder: %CD%
 echo path to blender.exe: %BLENDER_EXE%
-%BLENDER_EXE% -P %CD%\start.py
+%BLENDER_EXE% -P "%CD%\start.py"
 pause

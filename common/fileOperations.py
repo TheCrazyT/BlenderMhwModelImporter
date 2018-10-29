@@ -39,7 +39,7 @@ def ReadLong(fl):
     global pos,contentStreams
     contentStream = contentStreams[fl]
     contentStream.seek(pos[fl])
-    res = unpack("I",contentStream.read(4))[0]
+    res = unpack("L",contentStream.read(4))[0]
     pos[fl]+=4
     return res
 def ReadShort(fl):

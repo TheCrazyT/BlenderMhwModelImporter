@@ -4,6 +4,11 @@ Page on Nexus-Mods: https://www.nexusmods.com/monsterhunterworld/mods/242
 
 Run start.bat to execute the addon.
 
+29.10.2018:
+
+fixing start.bat-bug: space-characters inside filepath could prevent running the script.
+fixing weight-rounding-bug: blender uses float32, cutting some precision, after recalculation on export int-functions cutted decimal places, resulting in totally different weight-values.
+
 21.10.2018:
 
 Added normals on import and option for exporing normals.

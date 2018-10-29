@@ -26,9 +26,14 @@ def calcBonesAndWeightsArr(cnt,weights,bones):
 def calcBonesAndWeights(cnt,weightVal,weightVal2,bns):
     global WEIGHT_MULTIPLIER
     wt = []
-    wt.append((weightVal & BIT_LENGTH_10)*WEIGHT_MULTIPLIER)
-    wt.append(((weightVal>>10) & BIT_LENGTH_10)*WEIGHT_MULTIPLIER)
-    wt.append(((weightVal>>20) & BIT_LENGTH_10)*WEIGHT_MULTIPLIER)
+    w1 = (weightVal & BIT_LENGTH_10)*WEIGHT_MULTIPLIER
+    w2 = ((weightVal>>10) & BIT_LENGTH_10)*WEIGHT_MULTIPLIER
+    w3 = ((weightVal>>20) & BIT_LENGTH_10)*WEIGHT_MULTIPLIER
+    w4 = 1.0 - w1 - w2 - w3
+    wt.append(w1)
+    wt.append(w2)
+    wt.append(w3)
+    wt.append(w4)
     
     if cnt > 4:
         wt.append((weightVal2[0]) * WEIGHT_MULTIPLIER2)
