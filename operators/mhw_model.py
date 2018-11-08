@@ -511,6 +511,7 @@ class ExportMOD3(Operator, ImportHelper):
         if not 'data' in bpy.data.texts:
             raise Exception("Make shure to import with \"Reference/Embed original data.\" first.")
         scene = bpy.context.scene
+        bpy.ops.object.mode_set(mode='OBJECT')
         if self.apply_trans_rot:
             bpy.ops.object.select_all(action='SELECT')
             bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
