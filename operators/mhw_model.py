@@ -504,10 +504,17 @@ class ExportMOD3(Operator, ImportHelper):
     export_normals = BoolProperty(name="Export normals (experimental)",
                 description="Exports normals for every vertice.",
                 default=False)
+    apply_trans_rot = BoolProperty(name="Apply rotation/transformation changes",
+                description="Automatically apply rotation/transformation of mesh to vertices (ctrl+a).",
+                default=True)
     def execute(self, context):
         if not 'data' in bpy.data.texts:
             raise Exception("Make shure to import with \"Reference/Embed original data.\" first.")
         scene = bpy.context.scene
+        if self.apply_trans_rot:
+            bpy.ops.object.select_all(action='SELECT')
+            bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
+            bpy.ops.object.select_all(action='DESELECT')
         for obj in scene.objects:
             if obj.type == 'MESH':
                 scene.objects.active = obj
@@ -1405,7 +1412,7 @@ class ImportMOD3(Operator, ImportHelper):
                 
                 if(self.import_textures):
                     tex = bm.faces.layers.tex.new("main_uv_texture")
-                    uv = bm.loops.layers.uv.new("main_uv_layer")
+                uv = bm.loops.layers.uv.new("main_uv_layer")
 
                 fi = 0
                 for f in m.meshdata.facearray:
@@ -1443,11 +1450,11 @@ class ImportMOD3(Operator, ImportHelper):
                             vindices = [x for x in f]
                             if(self.import_textures):
                                 face[tex].image = bpy.data.images[iidx]
-                                vi = 0
-                                for loopi in range(0,len(face.loops)):
-                                    loop = face.loops[loopi]
-                                    loop[uv].uv = uvs[vi]
-                                    vi += 1
+                            vi = 0
+                            for loopi in range(0,len(face.loops)):
+                                loop = face.loops[loopi]
+                                loop[uv].uv = uvs[vi]
+                                vi += 1
                             bmfaces.append(face)
                             face_vertex_index[face] = vindices
                         except Exception as e:

@@ -8,7 +8,7 @@
     },
 
     "version": {
-        "name": "1.2"
+        "name": "1.3"
     },
 
     "files":
