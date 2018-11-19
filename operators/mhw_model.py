@@ -946,7 +946,17 @@ class ImportMOD3(Operator, ImportHelper):
             uvOFF = vertexBuffer.getUVOFFAfterNormals()
             fseek(fl,uvOFF)
             if len(uvs)>0:
-                WriteHalfFloats(fl,[uvs[uvi].x,1-uvs[uvi].y])
+                if not (uvi in uvs):
+                    dbg("uv: %s" % uvs)
+                    dbg("uvi: %s" % uvi)
+                    k = 0
+                    mk = 0
+                    for k,v in uvs.iteritems():
+                        mk = max(mk,k)
+                    dbg("max k in uv: %d" % mk)
+                    fseek(fl,4)
+                else:
+                    WriteHalfFloats(fl,[uvs[uvi].x,1-uvs[uvi].y])
                 uvi += 1
             else:
                 fseek(fl,4)
