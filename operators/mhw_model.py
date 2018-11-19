@@ -951,7 +951,7 @@ class ImportMOD3(Operator, ImportHelper):
                     dbg("uvi: %s" % uvi)
                     k = 0
                     mk = 0
-                    for k,v in uvs.iteritems():
+                    for k,v in uvs.items():
                         mk = max(mk,k)
                     dbg("max k in uv: %d" % mk)
                     fseek(fl,4)
