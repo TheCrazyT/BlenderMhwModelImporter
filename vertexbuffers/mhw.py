@@ -56,7 +56,7 @@ def basicAppendEmptyVertices(cls,fl,VertexRegionEnd,oldVertexCount,addVertexCoun
         subVertexCount = 0-addVertexCount
         DeleteBytes(fl,VertexRegionEnd-subVertexCount*cls.getStructSize(),cls.getStructSize()*subVertexCount)
 
-
+#IANonSkin1UVColor
 class MODVertexBuffer818904dc:
     def __init__(self,headerref,vertexcount):
         dbg("MODVertexBuffer818904dc %d" % vertexcount)
@@ -81,8 +81,8 @@ class MODVertexBuffer818904dc:
     def getStructSize():
         return 4+4+4+1+1+1+1+4+2+2+4
     @staticmethod
-    def getUVOFFAfterNormals():
-        return 1+4
+    def getUVOFFAfterTangents():
+        return 0
     @staticmethod
     def getWeightsOFFAfterUVOFF():
         return -1
@@ -93,6 +93,7 @@ class MODVertexBuffer818904dc:
     def appendEmptyVertices(cls,fl,VertexRegionEnd,oldVertexCount,addVertexCount):
         basicAppendEmptyVertices(cls,fl,VertexRegionEnd,oldVertexCount,addVertexCount)
 
+#IANonSkin2UVColor
 class MODVertexBufferf06033f:
     def __init__(self,headerref,vertexcount):
         dbg("MODVertexBufferf06033f %d" % vertexcount)
@@ -121,8 +122,8 @@ class MODVertexBufferf06033f:
     def getStructSize():
         return 4+4+4+1+1+1+1+4+2+2+4+1+ 1+1+1
     @staticmethod
-    def getUVOFFAfterNormals():
-        return 1+4
+    def getUVOFFAfterTangents():
+        return 0
     @staticmethod
     def getWeightsOFFAfterUVOFF():
         return 0
@@ -135,7 +136,8 @@ class MODVertexBufferf06033f:
     @classmethod
     def appendEmptyVertices(cls,fl,VertexRegionEnd,oldVertexCount,addVertexCount):
         basicAppendEmptyVertices(cls,fl,VertexRegionEnd,oldVertexCount,addVertexCount)
-       
+
+#IASkin8wt1UV
 class MODVertexBuffer81f58067:
     def __init__(self,headerref,vertexcount):
         dbg("MODVertexBuffer81f58067 %d" % vertexcount)
@@ -167,8 +169,8 @@ class MODVertexBuffer81f58067:
     def getStructSize():
         return 4+4+4+1+1+1+1+4+2+2+4+1+1+1+1+1 +1+1+1+1+1+1+1
     @staticmethod
-    def getUVOFFAfterNormals():
-        return 1+4
+    def getUVOFFAfterTangents():
+        return 0
     @staticmethod
     def getWeightsOFFAfterUVOFF():
         return 0
@@ -181,7 +183,8 @@ class MODVertexBuffer81f58067:
     @classmethod
     def appendEmptyVertices(cls,fl,VertexRegionEnd,oldVertexCount,addVertexCount):
         basicAppendEmptyVertices(cls,fl,VertexRegionEnd,oldVertexCount,addVertexCount)
-      
+
+#IASkin4wt2UV
 class MODVertexBufferf471fe45:
     def __init__(self,headerref,vertexcount):
         dbg("MODVertexBufferf471fe45 %d" % vertexcount)
@@ -212,8 +215,8 @@ class MODVertexBufferf471fe45:
     def getStructSize():
         return 4+4+4+1+1+1+1+4+2+2+2+2+4+1+1+1+1
     @staticmethod
-    def getUVOFFAfterNormals():
-        return 1+4
+    def getUVOFFAfterTangents():
+        return 0
     @staticmethod
     def getWeightsOFFAfterUVOFF():
         return 0
@@ -227,6 +230,7 @@ class MODVertexBufferf471fe45:
     def appendEmptyVertices(cls,fl,VertexRegionEnd,oldVertexCount,addVertexCount):
         basicAppendEmptyVertices(cls,fl,VertexRegionEnd,oldVertexCount,addVertexCount)
 
+#IASkin4wt1UVColor
 class MODVertexBuffer3c730760:
     def __init__(self,headerref,vertexcount):
         dbg("MODVertexBuffer3c730760 %d" % vertexcount)
@@ -261,8 +265,8 @@ class MODVertexBuffer3c730760:
     def getStructSize():
         return 4+4+4+1+1+1+1+4+2+2+4+1+1+1+1+1+1+1+1
     @staticmethod
-    def getUVOFFAfterNormals():
-        return 1+4
+    def getUVOFFAfterTangents():
+        return 0
     @staticmethod
     def getWeightsOFFAfterUVOFF():
         return 0
@@ -276,6 +280,7 @@ class MODVertexBuffer3c730760:
     def appendEmptyVertices(cls,fl,VertexRegionEnd,oldVertexCount,addVertexCount):
         basicAppendEmptyVertices(cls,fl,VertexRegionEnd,oldVertexCount,addVertexCount)
 
+#IASkin4wt2UVColor
 class MODVertexBufferb2fc0083:
     def __init__(self,headerref,vertexcount):
         dbg("MODVertexBufferb2fc0083 %d" % vertexcount)
@@ -301,8 +306,8 @@ class MODVertexBufferb2fc0083:
     def getStructSize():
         return 4+4+4+1+1+1+1+4+2+2+4
     @staticmethod
-    def getUVOFFAfterNormals():
-        return 1+4
+    def getUVOFFAfterTangents():
+        return 0
     @staticmethod
     def getWeightsOFFAfterUVOFF():
         return -1
@@ -315,7 +320,8 @@ class MODVertexBufferb2fc0083:
     @classmethod
     def appendEmptyVertices(cls,fl,VertexRegionEnd,oldVertexCount,addVertexCount):
         basicAppendEmptyVertices(cls,fl,VertexRegionEnd,oldVertexCount,addVertexCount)
-       
+
+#IASkin8wt1UVColor
 class MODVertexBuffer366995a7:
     def __init__(self,headerref,vertexcount):
         dbg("MODVertexBuffer366995a7 %d" % vertexcount)
@@ -347,8 +353,8 @@ class MODVertexBuffer366995a7:
     def getStructSize():
         return 4+4+4+1+1+1+1+4+2+2+4+1+1+1+1 + 8+4
     @staticmethod
-    def getUVOFFAfterNormals():
-        return 1+4
+    def getUVOFFAfterTangents():
+        return 0
     @staticmethod
     def getWeightsOFFAfterUVOFF():
         return 0
@@ -361,7 +367,8 @@ class MODVertexBuffer366995a7:
     @classmethod
     def appendEmptyVertices(cls,fl,VertexRegionEnd,oldVertexCount,addVertexCount):
         basicAppendEmptyVertices(cls,fl,VertexRegionEnd,oldVertexCount,addVertexCount)
-        
+
+#FIXME, not referenced by ShaderPackage.sdf, does this even exist?
 class MODVertexBufferc9690ab8:
     def __init__(self,headerref,vertexcount):
         dbg("MODVertexBufferc9690ab8 %d" % vertexcount)
@@ -402,8 +409,8 @@ class MODVertexBufferc9690ab8:
     def getStructSize():
         return 4+4+4+1+1+1+1+4+2+2+2+2+1+1+1+1 +1+1+1+1+1+1+1+1
     @staticmethod
-    def getUVOFFAfterNormals():
-        return 1+4
+    def getUVOFFAfterTangents():
+        return 0
     @staticmethod
     def getWeightsOFFAfterUVOFF():
         return -1
@@ -416,7 +423,8 @@ class MODVertexBufferc9690ab8:
     @classmethod
     def appendEmptyVertices(cls,fl,VertexRegionEnd,oldVertexCount,addVertexCount):
         basicAppendEmptyVertices(cls,fl,VertexRegionEnd,oldVertexCount,addVertexCount)
-        
+
+#FIXME, not referenced by ShaderPackage.sdf, does this even exist?
 class MODVertexBuffer5e7f202d:
     def __init__(self,headerref,vertexcount):
         dbg("MODVertexBuffer5e7f202d %d" % vertexcount)
@@ -442,8 +450,8 @@ class MODVertexBuffer5e7f202d:
     def getStructSize():
         return 4+4+4+1+1+1+1+4+2+2+4
     @staticmethod
-    def getUVOFFAfterNormals():
-        return 1+4
+    def getUVOFFAfterTangents():
+        return 0
     @staticmethod
     def getWeightsOFFAfterUVOFF():
         return -1
@@ -456,7 +464,8 @@ class MODVertexBuffer5e7f202d:
     @classmethod
     def appendEmptyVertices(cls,fl,VertexRegionEnd,oldVertexCount,addVertexCount):
         basicAppendEmptyVertices(cls,fl,VertexRegionEnd,oldVertexCount,addVertexCount)
-       
+
+#FIXME, not referenced by ShaderPackage.sdf, does this even exist?
 class MODVertexBufferd829702c:
     def __init__(self,headerref,vertexcount):
         dbg("MODVertexBufferd829702c %d" % vertexcount)
@@ -480,8 +489,8 @@ class MODVertexBufferd829702c:
     def getStructSize():
         return 4+4+4+1+1+1+1+4+2+2
     @staticmethod
-    def getUVOFFAfterNormals():
-        return 1+4
+    def getUVOFFAfterTangents():
+        return 0
     @staticmethod
     def getWeightsOFFAfterUVOFF():
         return -1
@@ -494,7 +503,8 @@ class MODVertexBufferd829702c:
     @classmethod
     def appendEmptyVertices(cls,fl,VertexRegionEnd,oldVertexCount,addVertexCount):
         basicAppendEmptyVertices(cls,fl,VertexRegionEnd,oldVertexCount,addVertexCount)
-        
+
+#IASkin8wt2UVColor
 class MODVertexBufferb8e69244:
     def __init__(self,headerref,vertexcount):
         dbg("MODVertexBufferd829702c %d" % vertexcount)
@@ -533,8 +543,8 @@ class MODVertexBufferb8e69244:
     def getStructSize():
         return 4+4+4+1+1+1+1+4+2+2+4+1+1+1+1+1*8+4 +1+1+1+1
     @staticmethod
-    def getUVOFFAfterNormals():
-        return 1+4
+    def getUVOFFAfterTangents():
+        return 0
     @staticmethod
     def getWeightsOFFAfterUVOFF():
         return 0
@@ -548,6 +558,11 @@ class MODVertexBufferb8e69244:
     def appendEmptyVertices(cls,fl,VertexRegionEnd,oldVertexCount,addVertexCount):
         basicAppendEmptyVertices(cls,fl,VertexRegionEnd,oldVertexCount,addVertexCount)
 
+#FIXME IANonSkin2UV    != NonExisting
 MODVertexBuffera5104ca0 = MODVertexBuffer5e7f202d
+
+#FIXME IASkin4wt1UV    != IANonSkin2UVColor
 MODVertexBufferf637401c = MODVertexBufferf06033f
+
+#FIXME IANonSkin1UV    != NonExisting
 MODVertexBuffera756f2f9 = MODVertexBufferd829702c

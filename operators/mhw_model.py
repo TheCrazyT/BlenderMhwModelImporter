@@ -181,7 +181,7 @@ class MeshPart:
             VertexOffset,
             FaceOffset,
             FaceCount,
-            FaceAdd,
+            VertexBase,
             meshdata,
             boneremapid,
             headerref,
@@ -200,7 +200,7 @@ class MeshPart:
             self.VertexOffset = VertexOffset
             self.FaceOffset = FaceOffset
             self.FaceCount = FaceCount
-            self.FaceAdd = FaceAdd
+            self.VertexBase = VertexBase
             self.meshdata = meshdata
             self.boneremapid = boneremapid
             self.headerref = headerref
@@ -216,7 +216,7 @@ class MeshPart:
         headerref = self.headerref
         cls = eval("MODVertexBuffer%08x" % self.BlockType)
         VOFF = headerref.VertexOffset+meshPart.VertexOffset
-        BOFF = meshPart.VertexSub+meshPart.FaceAdd
+        BOFF = meshPart.VertexSub+meshPart.VertexBase
         START = VOFF+meshPart.BlockSize*BOFF
         RES = START+self.VertexCount*cls.getStructSize()
         dbg("#%d getVertexRegionEnd %08x [START=%08x,VertexCount=%d]" % (self.uid,RES,START,self.VertexCount))
@@ -238,6 +238,9 @@ class MeshPart:
                 elif p.VertexOffset+cls.getStructSize()*(newVertexCount-self.VertexCount)>0:
                     p.writeVertexOffset(p.VertexOffset+cls.getStructSize()*(newVertexCount-self.VertexCount))
                 else:
+                    if(p.VertexSub==0):
+                        p.VertexSub = p.VertexBase
+                        p.writeVertexBase(0)
                     p.writeVertexSub(p.VertexSub-(self.VertexCount-newVertexCount))
             #Vertex count should not influence relative offset ...
             #if headerref.FaceOffset+p.FaceOffset > headerref.FaceOffset+self.FaceOffset:
@@ -258,6 +261,11 @@ class MeshPart:
         self.VertexSub = newVertexSub
         Seek(fl,self.MeshPartOffset+0x10)
         WriteLongs(fl,[self.VertexSub])
+    def writeVertexBase(self,newVertexBase):
+        fl = self.headerref.fl
+        self.VertexBase = newVertexBase
+        Seek(fl,self.MeshPartOffset+0x24)
+        WriteLongs(fl,[self.VertexBase])
     def modifyFaceCount(self,parts,newFaceCount):
         newFaceCount *= 3
         dbg("#%d modifyFaceCount %d [oldFaceCount: %d] [headerRef.FaceOffset: %08x , self.FaceOffset: %08x]" %
@@ -363,10 +371,14 @@ class MeshPart:
         if len(faces) != self.FaceCount:
             raise Exception("Face count mismatch: %d %d" % (len(faces),self.FaceCount))
         uvs = {}
+        tangents = {}
         if len(bm.uv_layers)>0:
             for p in bm.polygons:
                 for loop in p.loop_indices:
-                    uvs[vertIdxMap[bm.loops[loop].vertex_index]] = bm.uv_layers[0].data[loop].uv
+                    vId = vertIdxMap[bm.loops[loop].vertex_index]
+                    uvs[vId] = bm.uv_layers[0].data[loop].uv
+                    if export_normals:
+                        tangents[vId] = bm.loops[loop].tangent
                 
         weights = {}
         bones = {}
@@ -382,7 +394,7 @@ class MeshPart:
             for v in verts2:
                 normals[v.index] = v.normal
         
-        self.writemeshdataF(self,fl,verts,uvs,faces,weights,bones,normals)
+        self.writemeshdataF(self,fl,verts,uvs,faces,weights,bones,normals,tangents)
     def getName(self):
         return "MyObject.%05d.%08x" % (self.uid,self.BlockType)
 
@@ -520,6 +532,7 @@ class ExportMOD3(Operator, ImportHelper):
             if obj.type == 'MESH':
                 scene.objects.active = obj
                 bpy.ops.object.mode_set(mode='OBJECT')
+                obj.data.calc_tangents()
         dataText = bpy.data.texts['data'].lines[0].body
         if dataText[0:5]=="path:":
             path = dataText[5:]
@@ -908,13 +921,13 @@ class ImportMOD3(Operator, ImportHelper):
         dbg("writeFaces % 08x" % (headerref.FaceOffset+meshPart.FaceOffset*2))
         Seek(fl,headerref.FaceOffset+meshPart.FaceOffset*2)
         WriteShorts(fl,faces)
-    def writemeshdatav1(self,meshPart,fl,vertices,uvs,faces,weights,bones,normals):
+    def writemeshdatav1(self,meshPart,fl,vertices,uvs,faces,weights,bones,normals,tangents):
         raise Exception("NotImplementedError")
-    def writemeshdatav2(self,meshPart,fl,vertices,uvs,faces,weights,bones,normals):
+    def writemeshdatav2(self,meshPart,fl,vertices,uvs,faces,weights,bones,normals,tangents):
         raise Exception("NotImplementedError")
-    def writemeshdatav3(self,meshPart,fl,vertices,uvs,faces,weights,bones,normals):
+    def writemeshdatav3(self,meshPart,fl,vertices,uvs,faces,weights,bones,normals,tangents):
         headerref = meshPart.headerref
-        BOFF=meshPart.VertexSub+meshPart.FaceAdd
+        BOFF=meshPart.VertexSub+meshPart.VertexBase
         dbg("meshPart.VertexOffset %08x" % (headerref.VertexOffset+meshPart.VertexOffset+meshPart.BlockSize*BOFF))
         Seek(fl, (headerref.VertexOffset+meshPart.VertexOffset+meshPart.BlockSize*BOFF))
         dbg("writemeshdatav3 %s meshPart.VertexCount: %d , vertices: %d weights: %d bones: %d" % (meshPart.getName(),meshPart.VertexCount,len(vertices),len(weights),len(bones)))
@@ -930,8 +943,9 @@ class ImportMOD3(Operator, ImportHelper):
             vStartPos = getPos(fl)
             #dbg("vStartPos: %08x" % vStartPos)
             WriteFloats(fl,v3)
-            if len(normals)>0:
+            if (len(normals)>0) and (len(tangents)>0):
                 nvec = normals[vi]
+                tvec = tangents[vi]
                 #dbg("normals for %d: %s" % (vi,nvec))
                 floats = []
                 floats.append(nvec.x)
@@ -939,11 +953,18 @@ class ImportMOD3(Operator, ImportHelper):
                 floats.append(nvec.z)
                 #dbg("normals as bytes for %d: %s" % (vi,bytes))
                 Write8s(fl,floats)
+                Write8s(fl,[0.0])
+                floats = []
+                floats.append(tvec.x)
+                floats.append(tvec.y)
+                floats.append(tvec.z)
+                #dbg("normals as bytes for %d: %s" % (vi,bytes))
+                Write8s(fl,floats)
             else:
-                fseek(fl,3)
+                fseek(fl,8)
             vertexBuffer = eval("MODVertexBuffer%08x" % meshPart.BlockType)
             structSize = vertexBuffer.getStructSize()
-            uvOFF = vertexBuffer.getUVOFFAfterNormals()
+            uvOFF = vertexBuffer.getUVOFFAfterTangents()
             fseek(fl,uvOFF)
             if len(uvs)>0:
                 if not (uvi in uvs):
@@ -1052,7 +1073,7 @@ class ImportMOD3(Operator, ImportHelper):
         f = eval("MODVertexBuffer%08x" % meshPart.BlockType)
         headerref = meshPart.headerref
         if f != None:
-            Seek(headerref.fl,((headerref.VertexOffset+meshPart.VertexOffset)+(BlockSize*(meshPart.VertexSub+meshPart.FaceAdd))))
+            Seek(headerref.fl,((headerref.VertexOffset+meshPart.VertexOffset)+(BlockSize*(meshPart.VertexSub+meshPart.VertexBase))))
             meshPart.meshdata = f(headerref,meshPart.VertexCount)
             Seek(headerref.fl,(headerref.FaceOffset+FaceOffset*2))
             if headerref.bendian:
@@ -1068,7 +1089,7 @@ class ImportMOD3(Operator, ImportHelper):
         headerref = meshPart.headerref
         if f != None:
             VOFF=headerref.VertexOffset+meshPart.VertexOffset
-            BOFF=meshPart.VertexSub+meshPart.FaceAdd
+            BOFF=meshPart.VertexSub+meshPart.VertexBase
             Seek(headerref.fl,(VOFF+meshPart.BlockSize*BOFF))
             meshPart.meshdata = f(headerref,meshPart.VertexCount)
             Seek(headerref.fl,(headerref.FaceOffset+meshPart.FaceOffset*2))
@@ -1099,7 +1120,7 @@ class ImportMOD3(Operator, ImportHelper):
             fseek(fl,4)
             FaceOffset = ReadBELong(fl)
             FaceCount = ReadBELong(fl)
-            FaceAdd = ReadBELong(fl)
+            VertexBase = ReadBELong(fl)
             fseek(fl,6)
             boneremapid = ReadByte(fl)+1
             fseek(fl,5)
@@ -1120,7 +1141,7 @@ class ImportMOD3(Operator, ImportHelper):
             fseek(fl,4)
             FaceOffset = ReadLong(fl) 
             FaceCount = ReadLong(fl)
-            FaceAdd = ReadLong(fl) 
+            VertexBase = ReadLong(fl) 
             fseek(fl,6)
             boneremapid = ReadByte(fl)+1
             fseek(fl,5)
@@ -1138,7 +1159,7 @@ class ImportMOD3(Operator, ImportHelper):
             VertexOffset,
             FaceOffset,
             FaceCount,
-            FaceAdd,
+            VertexBase,
             None,
             boneremapid,
             self,
@@ -1164,7 +1185,7 @@ class ImportMOD3(Operator, ImportHelper):
         BlockType = ReadLong(headerref.fl)
         FaceOffset = ReadLong(headerref.fl)
         FaceCount = ReadLong(headerref.fl)
-        FaceAdd = ReadLong(headerref.fl)
+        VertexBase = ReadLong(headerref.fl)
         boneremapid = ReadByte(headerref.fl)+1
         fseek(headerref.fl,39)
         return MeshPart(
@@ -1181,7 +1202,7 @@ class ImportMOD3(Operator, ImportHelper):
             VertexOffset,
             FaceOffset,
             FaceCount,
-            FaceAdd,
+            VertexBase,
             None,
             boneremapid,
             self,
@@ -1300,6 +1321,8 @@ class ImportMOD3(Operator, ImportHelper):
             if self.clear_scene_before_import:
                 bpy.ops.object.select_all(action='SELECT')
                 bpy.ops.object.delete() 
+                for i in bpy.data.images.keys():
+                    bpy.data.images.remove(i)
             self.embed_data = True if self.embed_mode == EMBED_MODE_DATA else False
             self.reference_data = True if self.embed_mode == EMBED_MODE_REFERENCE else False
             self.init_main()
