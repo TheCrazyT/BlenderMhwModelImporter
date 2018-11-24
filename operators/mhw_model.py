@@ -378,7 +378,7 @@ class MeshPart:
                     vId = vertIdxMap[bm.loops[loop].vertex_index]
                     uvs[vId] = bm.uv_layers[0].data[loop].uv
                     if export_normals:
-                        tangents[vId] = bm.loops[loop].tangent
+                        tangents[vId] = (bm.loops[loop].tangent,bm.loops[loop].bitangent_sign)
                 
         weights = {}
         bones = {}
@@ -945,7 +945,7 @@ class ImportMOD3(Operator, ImportHelper):
             WriteFloats(fl,v3)
             if (len(normals)>0) and (len(tangents)>0):
                 nvec = normals[vi]
-                tvec = tangents[vi]
+                (tvec,tsign) = tangents[vi]
                 #dbg("normals for %d: %s" % (vi,nvec))
                 floats = []
                 floats.append(nvec.x)
@@ -958,6 +958,7 @@ class ImportMOD3(Operator, ImportHelper):
                 floats.append(tvec.x)
                 floats.append(tvec.y)
                 floats.append(tvec.z)
+                floats.append(tsign)
                 #dbg("normals as bytes for %d: %s" % (vi,bytes))
                 Write8s(fl,floats)
             else:
