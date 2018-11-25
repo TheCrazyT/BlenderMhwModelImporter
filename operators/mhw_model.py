@@ -532,7 +532,8 @@ class ExportMOD3(Operator, ImportHelper):
             if obj.type == 'MESH':
                 scene.objects.active = obj
                 bpy.ops.object.mode_set(mode='OBJECT')
-                obj.data.calc_tangents()
+                if len(obj.data.vertices)>0:
+                    obj.data.calc_tangents()
         dataText = bpy.data.texts['data'].lines[0].body
         if dataText[0:5]=="path:":
             path = dataText[5:]
@@ -838,14 +839,13 @@ class ImportMOD3(Operator, ImportHelper):
         self.lmatrices = []
         self.amatrices = []
         self.remaptable = []
-        self.remaptablesize = 0
+        self.remaptablesize = 512 if headerref.Version == 137 else 256
         for b in range(0,headerref.BoneCount):
             self.bones.append(_MODBoneInfo(b,headerref.fl,headerref.bendian))
         for b in range(0,headerref.BoneCount):
             self.lmatrices.append(readmatrix44(headerref))
         for b in range(0,headerref.BoneCount):
             self.amatrices.append(readmatrix44(headerref))
-            self.remaptablesize = 512 if headerref.Version == 137 else 256
         for b in range(0,self.remaptablesize):
             self.remaptable.append(ReadByte(headerref.fl))
         if headerref.BoneMapCount != None:
