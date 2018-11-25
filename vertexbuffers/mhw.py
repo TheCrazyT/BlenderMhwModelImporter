@@ -29,22 +29,21 @@ def calcBonesAndWeights(cnt,weightVal,weightVal2,bns):
     w1 = (weightVal & BIT_LENGTH_10)*WEIGHT_MULTIPLIER
     w2 = ((weightVal>>10) & BIT_LENGTH_10)*WEIGHT_MULTIPLIER
     w3 = ((weightVal>>20) & BIT_LENGTH_10)*WEIGHT_MULTIPLIER
-    w4 = 1.0 - w1 - w2 - w3
     wt.append(w1)
     wt.append(w2)
     wt.append(w3)
-    wt.append(w4)
     
     if cnt > 4:
         wt.append((weightVal2[0]) * WEIGHT_MULTIPLIER2)
         wt.append((weightVal2[1]) * WEIGHT_MULTIPLIER2)
         wt.append((weightVal2[2]) * WEIGHT_MULTIPLIER2)
         wt.append((weightVal2[3]) * WEIGHT_MULTIPLIER2)
-        wt.append(1 - wt[0] - wt[1] - wt[2] - wt[3] - wt[4] - wt[5]- wt[6])
+        wt.append(1.0 - wt[0] - wt[1] - wt[2] - wt[3] - wt[4] - wt[5]- wt[6])
         if wt[7] < 0:
             wt[7] = 0
     else:
-        wt.append(1 - wt[0] - wt[1] - wt[2])
+        w4 = 1.0 - w1 - w2 - w3
+        wt.append(w4)
 
     
     return calcBonesAndWeightsArr(cnt,wt,bns)
