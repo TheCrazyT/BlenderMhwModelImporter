@@ -945,7 +945,6 @@ class ImportMOD3(Operator, ImportHelper):
             WriteFloats(fl,v3)
             if (len(normals)>0) and (len(tangents)>0):
                 nvec = normals[vi]
-                (tvec,tsign) = tangents[vi]
                 #dbg("normals for %d: %s" % (vi,nvec))
                 floats = []
                 floats.append(nvec.x)
@@ -955,10 +954,17 @@ class ImportMOD3(Operator, ImportHelper):
                 Write8s(fl,floats)
                 Write8s(fl,[0.0])
                 floats = []
-                floats.append(tvec.x)
-                floats.append(tvec.y)
-                floats.append(tvec.z)
-                floats.append(tsign)
+                if vi in tangents:
+                    (tvec,tsign) = tangents[vi]
+                    floats.append(tvec.x)
+                    floats.append(tvec.y)
+                    floats.append(tvec.z)
+                    floats.append(tsign)
+                else:
+                    floats.append(0)
+                    floats.append(0)
+                    floats.append(0)
+                    floats.append(0)
                 #dbg("normals as bytes for %d: %s" % (vi,bytes))
                 Write8s(fl,floats)
             else:
