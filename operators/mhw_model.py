@@ -372,6 +372,7 @@ class MeshPart:
             raise Exception("Face count mismatch: %d %d" % (len(faces),self.FaceCount))
         uvs = {}
         tangents = {}
+        normals = {}
         if len(bm.uv_layers)>0:
             for p in bm.polygons:
                 for loop in p.loop_indices:
@@ -379,6 +380,7 @@ class MeshPart:
                     uvs[vId] = bm.uv_layers[0].data[loop].uv
                     if export_normals:
                         tangents[vId] = (bm.loops[loop].tangent,bm.loops[loop].bitangent_sign)
+                        normals[vId] = bm.loops[loop].normal
                 
         weights = {}
         bones = {}
@@ -389,10 +391,6 @@ class MeshPart:
             for g in v.groups:
                 vertWeights.append(g.weight)
             weights[v.index] = vertWeights
-        normals = {}
-        if export_normals:
-            for v in verts2:
-                normals[v.index] = v.normal
         
         self.writemeshdataF(self,fl,verts,uvs,faces,weights,bones,normals,tangents)
     def getName(self):
@@ -1200,7 +1198,7 @@ class ImportMOD3(Operator, ImportHelper):
             uid,
             id,
             Material,
-            None,
+            uid,
             lod,
             BlockSize,
             BlockType,
@@ -1395,7 +1393,7 @@ class ImportMOD3(Operator, ImportHelper):
         Seek(fl,0)
             
         self.readHeader()
-        self.materials = self.readMaterials()
+        self.materialsNames = self.readMaterials()
         if self.do_read_bones:
             self.readBones()
         self.readMeshParts()
@@ -1443,8 +1441,12 @@ class ImportMOD3(Operator, ImportHelper):
                     verts2.append(v)
                     bmv = bm.verts.new(v)
                     if vi < len(normals):
-                        bmv.normal = [float(normals[vi][0]),float(normals[vi][1]),float(normals[vi][2])]
-                        #dbg("normal: %s" % bmv.normal)
+                        fx = float(normals[vi][0])
+                        fy = float(normals[vi][1])
+                        fz = float(normals[vi][2])
+                        nvl = math.sqrt(fx*fx + fy*fy + fz*fz)
+                        bmv.normal = [fx/nvl,fy/nvl,fz/nvl]
+                        #dbg("normal for mespart %d and vertex %d: %s (%s)" % (pi,vi,bmv.normal,(fx,fy,fz)))
                     bmv[my_id] = vi
                     bmv.index = vi
                     verts.append(bmv)
@@ -1475,17 +1477,17 @@ class ImportMOD3(Operator, ImportHelper):
                         uidx = m.UnknS2Idx
                         iidx = 0
                         imgi = 0
-                        for img in bpy.data.images:
-                            if "_BML" in img.name:
-                                iidx = imgi
-                                break
-                            imgi += 1
-                        #TODO
-                        #if uidx<len(self.materials):
-                        #    iidx = self.materials[uidx].unknS2.texIdx
-                        #    if iidx > len(bpy.data.images):
-                        #        dbg("something went wrong, using default iidx [%d is out of range, unknS2-offset: %08x]" % (iidx,self.unknS2[uidx].offset))
-                        #dbg("using image index %d for mesh: %d" % (iidx,pi))
+                        if self.import_textures and (uidx < len(self.materials)):
+                            iidx = self.materials[uidx].unknS2.texIdx-1
+                            if iidx > len(bpy.data.images):
+                                dbg("something went wrong, using default iidx [%d is out of range, unknS2-offset: %08x]" % (iidx,self.unknS2[uidx].offset))
+                                for img in bpy.data.images:
+                                    if "_BML" in img.name:
+                                        iidx = imgi
+                                        break
+                                    imgi += 1
+
+                        dbg("using image index %d for mesh: %d" % (iidx,pi))
                         try:
                             face = bm.faces.new(vts)
                             vindices = [x for x in f]
@@ -1518,7 +1520,20 @@ class ImportMOD3(Operator, ImportHelper):
 
                 # make the bmesh the object's mesh
                 bm.to_mesh(mesh)
+
+                bm2 = obj.data                
+                for p in bm2.polygons:
+                    for loop in p.loop_indices:
+                        #dbg("setting loop normal for mespart %d and vertex %d: %s" % (pi,bm2.loops[loop].vertex_index,verts[bm2.loops[loop].vertex_index].normal))
+                        bm2.loops[loop].normal = verts[bm2.loops[loop].vertex_index].normal
+
                 
+                
+                bpy.ops.object.mode_set(mode='EDIT')
+                bpy.ops.mesh.select_all(action='SELECT')
+                bpy.ops.mesh.faces_shade_smooth()
+                bpy.ops.mesh.select_all(action='DESELECT')
+                bpy.ops.object.mode_set(mode='OBJECT')
                 
                 if len(verts)>0:
                     boneIds = []
@@ -1538,7 +1553,7 @@ class ImportMOD3(Operator, ImportHelper):
 
                 mesh.materials.append(shadeless)
                 mesh["LOD"] = m.LOD
-                mesh["Material"] = self.materials[m.Material]
+                mesh["Material"] = self.materialsNames[m.Material]
 
                 bm.free()  # always do this when finished
             else:
