@@ -386,7 +386,11 @@ class MeshPart:
         bones = {}
         vi = 0
         for v in verts2:
-            bones[v.index] = [int(obj.vertex_groups[g.group].name.split(".")[1]) for g in v.groups]
+            bones[v.index] = []
+            for g in v.groups:
+                vg = obj.vertex_groups[g.group]
+                if vg.name[0:4] == 'Bone':
+                    bones[v.index].append(int(vg.name.split(".")[1]))
             vertWeights = []
             for g in v.groups:
                 vertWeights.append(g.weight)
@@ -599,32 +603,40 @@ class ExportMOD3(Operator, ImportHelper):
 
     def writeBones(self,headerref,fl,ArmatureName):
         dbg("writeBones %s" % ArmatureName)
-        bpy.context.area.type = 'VIEW_3D'
-        bpy.ops.view3d.snap_cursor_to_center()
-        scene = bpy.context.scene
-        scene.objects.active = bpy.data.objects[ArmatureName]
-        #bpy.ops.armature.select_all(action='DESELECT')
-        bpy.ops.object.mode_set(mode='EDIT')
-        armature = bpy.data.objects[ArmatureName].data
-        if (FMT_BONE % 255) in armature.edit_bones:
-            Seek(fl,headerref.BonesOffset)
-            #TODO, also save parent structure
-            fseek(fl,headerref.BoneCount*24)
-            if ArmatureName == AMATRICES_ARMATURE:
-                fseek(fl,headerref.BoneCount*64)
-            #store "lmatrices"
-            for i in range(0,headerref.BoneCount):
-                bone = armature.edit_bones[FMT_BONE % i]
-                t2 = mathutils.Matrix.Translation(bone.tail)*mathutils.Matrix.Translation(bone.head).inverted()
-                #t2 = bone.matrix*bone.parent.matrix.inverted()
-                #dbg("%s %s %s" % (bone.matrix,bone.parent.matrix,t2))
-                #t2 *= Matrix.Translation(Vector((0,0,-1,1)))
-                #t2 *= Matrix.Rotation(90*math.pi/2,4,Vector((0,0,1)))
-                dbg("write bone %d at offset %08x:\n%s" % (i,getPos(fl),t2))
-                for r in t2.transposed().row:
-                    dbg(r)
-                    WriteFloats(fl,(r[0],r[1],r[2],r[3]))
-        bpy.ops.object.mode_set(mode='OBJECT')
+        old_type = bpy.context.area.type
+        try:
+            bpy.context.area.type = 'VIEW_3D'
+            bpy.ops.view3d.snap_cursor_to_center()
+            scene = bpy.context.scene
+            scene.objects.active = bpy.data.objects[ArmatureName]
+            #bpy.ops.armature.select_all(action='DESELECT')
+            bpy.ops.object.mode_set(mode='EDIT')
+            armature = bpy.data.objects[ArmatureName].data
+            if (FMT_BONE % 255) in armature.edit_bones:
+                Seek(fl,headerref.BonesOffset)
+                #TODO, also save parent structure
+                fseek(fl,headerref.BoneCount*24)
+                if ArmatureName == AMATRICES_ARMATURE:
+                    fseek(fl,headerref.BoneCount*64)
+                #store "lmatrices"
+                for i in range(0,headerref.BoneCount):
+                    bone = armature.edit_bones[FMT_BONE % i]
+                    if(Vector((0.0,0.0,0.0001)) == bone.head-bone.tail):
+                        dbg("zero length bone detected")
+                        t2 = mathutils.Matrix.Translation(Vector((0,0,0)))
+                    else:
+                        t2 = mathutils.Matrix.Translation(bone.tail)*mathutils.Matrix.Translation(bone.head).inverted()
+                    #t2 = bone.matrix*bone.parent.matrix.inverted()
+                    #dbg("%s %s %s" % (bone.matrix,bone.parent.matrix,t2))
+                    #t2 *= Matrix.Translation(Vector((0,0,-1,1)))
+                    #t2 *= Matrix.Rotation(90*math.pi/2,4,Vector((0,0,1)))
+                    dbg("write bone %d at offset %08x:\n%s" % (i,getPos(fl),t2))
+                    for r in t2.transposed().row:
+                        dbg(r)
+                        WriteFloats(fl,(r[0],r[1],r[2],r[3]))
+            bpy.ops.object.mode_set(mode='OBJECT')
+        finally:
+            bpy.context.area.type = old_type
         #bpy.ops.armature.select_all(action='DESELECT')
 
 
@@ -1487,7 +1499,7 @@ class ImportMOD3(Operator, ImportHelper):
                                         break
                                     imgi += 1
 
-                        dbg("using image index %d for mesh: %d" % (iidx,pi))
+                        #dbg("using image index %d for mesh: %d" % (iidx,pi))
                         try:
                             face = bm.faces.new(vts)
                             vindices = [x for x in f]
