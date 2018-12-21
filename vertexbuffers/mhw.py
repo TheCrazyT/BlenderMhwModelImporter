@@ -93,9 +93,9 @@ class MODVertexBuffer818904dc:
         basicAppendEmptyVertices(cls,fl,VertexRegionEnd,oldVertexCount,addVertexCount)
 
 #IANonSkin2UVColor
-class MODVertexBufferf06033f:
+class MODVertexBuffer0f06033f:
     def __init__(self,headerref,vertexcount):
-        dbg("MODVertexBufferf06033f %d" % vertexcount)
+        dbg("MODVertexBuffer0f06033f %d" % vertexcount)
         self.vertarray   = []
         self.uvs         = []
         self.weights     = []
@@ -561,7 +561,7 @@ class MODVertexBufferb8e69244:
 MODVertexBuffera5104ca0 = MODVertexBuffer5e7f202d
 
 #FIXME IASkin4wt1UV    != IANonSkin2UVColor
-MODVertexBufferf637401c = MODVertexBufferf06033f
+MODVertexBufferf637401c = MODVertexBuffer0f06033f
 
 #FIXME IANonSkin1UV    != NonExisting
 MODVertexBuffera756f2f9 = MODVertexBufferd829702c
