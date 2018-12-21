@@ -1,5 +1,6 @@
 import binascii
 import os
+import struct
 from io import BytesIO
 from struct import pack,unpack
 from os import SEEK_SET,SEEK_CUR,SEEK_END
@@ -191,6 +192,8 @@ def ReadString(fl,length):
 
 def WriteHalfFloats(fl,floats32):
     global pos,contentStreams
+    if(len(floats32) == 0):
+        return
     contentStream = contentStreams[fl]
     p = b''
     for f in floats32:
@@ -201,6 +204,8 @@ def WriteHalfFloats(fl,floats32):
     pos[fl] += 2*len(floats32)
 def WriteFloats(fl,floats):
     global pos,contentStreams
+    if(len(floats) == 0):
+        return
     contentStream = contentStreams[fl]
     #dbg("WriteFloats at 0x%08x %s" % (pos[fl],floats))
     if pos[fl]==0:
@@ -211,6 +216,8 @@ def WriteFloats(fl,floats):
     pos[fl] += len(floats)*4
 def WriteBytes(fl,bytes):
     global pos,contentStreams
+    if(len(bytes) == 0):
+        return
     contentStream = contentStreams[fl]
     #dbg("WriteBytes at 0x%08x %s" % (pos[fl],bytes))
     if pos[fl]==0:
@@ -221,6 +228,8 @@ def WriteBytes(fl,bytes):
     pos[fl] += len(bytes)
 def WriteSBytes(fl,bytes):
     global pos,contentStreams
+    if(len(bytes) == 0):
+        return
     contentStream = contentStreams[fl]
     #dbg("WriteBytes at 0x%08x %s" % (pos[fl],bytes))
     if pos[fl]==0:
@@ -231,6 +240,8 @@ def WriteSBytes(fl,bytes):
     pos[fl] += len(bytes)
 def Write8s(fl,floats):
     global pos,contentStreams
+    if(len(floats) == 0):
+        return
     contentStream = contentStreams[fl]
     #dbg("WriteBytes at 0x%08x %s" % (pos[fl],bytes))
     if pos[fl]==0:
@@ -245,15 +256,23 @@ def Write8s(fl,floats):
     WriteSBytes(fl,floats)
 def WriteShorts(fl,shorts):
     global pos,contentStreams
+    if(len(shorts) == 0):
+        return
     contentStream = contentStreams[fl]
     if pos[fl]==0:
         raise Exception("Invalid write position")
-    p = pack("%dH" % len(shorts),*shorts)
+    try:
+        p = pack("%dH" % len(shorts),*shorts)
+    except struct.error as e:
+        dbg(shorts)
+        raise e
     contentStream.seek(pos[fl])
     contentStream.write(p)
     pos[fl] += len(shorts)*2
 def WriteLongs(fl,longs):
     global pos,contentStreams
+    if(len(longs) == 0):
+        return
     contentStream = contentStreams[fl]
     #dbg("WriteLongs at 0x%08x %s %d" % (pos[fl],longs,len(longs)))
     if pos[fl]<=0:

@@ -238,10 +238,10 @@ class MeshPart:
                 elif p.VertexOffset+cls.getStructSize()*(newVertexCount-self.VertexCount)>0:
                     p.writeVertexOffset(p.VertexOffset+cls.getStructSize()*(newVertexCount-self.VertexCount))
                 else:
-                    if(p.VertexSub==0):
-                        p.VertexSub = p.VertexBase
-                        p.writeVertexBase(0)
-                    p.writeVertexSub(p.VertexSub-(self.VertexCount-newVertexCount))
+                    if(p.VertexBase>0):
+                        p.writeVertexBase(p.VertexBase-(self.VertexCount-newVertexCount))
+                    else:
+                        raise Exception("No clue how to handle case where VertexBase=0")
             #Vertex count should not influence relative offset ...
             #if headerref.FaceOffset+p.FaceOffset > headerref.FaceOffset+self.FaceOffset:
             #    p.writeFaceOffset(p.FaceOffset+3*(newVertexCount-self.VertexCount))
