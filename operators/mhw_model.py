@@ -241,7 +241,10 @@ class MeshPart:
                     if(p.VertexBase>0):
                         p.writeVertexBase(p.VertexBase-(self.VertexCount-newVertexCount))
                     else:
-                        raise Exception("No clue how to handle case where VertexBase=0")
+                        if p.VertexSub+(newVertexCount-self.VertexCount)>0:
+                            p.writeVertexSub(p.VertexSub+(newVertexCount-self.VertexCount))
+                        else:
+                            raise Exception("No clue how to handle case where VertexBase=0 and VertexSub<0")
             #Vertex count should not influence relative offset ...
             #if headerref.FaceOffset+p.FaceOffset > headerref.FaceOffset+self.FaceOffset:
             #    p.writeFaceOffset(p.FaceOffset+3*(newVertexCount-self.VertexCount))
@@ -417,7 +420,7 @@ def reserveVerticesAndFaces(export,headerref,parts,p,newVertexCount,newFaceCount
     p.modifyFaceCount(parts,newFaceCount)
     
     
-def checkMeshesForModifiactions(export,i):
+def checkMeshesForModifications(export,i):
     fl,parts = (i.fl,i.parts)
     orgFaceOffset = i.headerref.FaceOffset
     modified = False
@@ -555,7 +558,7 @@ class ExportMOD3(Operator, ImportHelper):
         i.materials = i.readMaterials()
         i.readMeshParts()
         
-        checkMeshesForModifiactions(self,i)
+        checkMeshesForModifications(self,i)
         
         for p in i.parts:
             p.writeVertexes(i.fl,self.do_write_bones,self.export_normals)
@@ -1457,7 +1460,10 @@ class ImportMOD3(Operator, ImportHelper):
                         fy = float(normals[vi][1])
                         fz = float(normals[vi][2])
                         nvl = math.sqrt(fx*fx + fy*fy + fz*fz)
-                        bmv.normal = [fx/nvl,fy/nvl,fz/nvl]
+                        if nvl == 0:
+                            bmv.normal = [0,0,0]
+                        else:
+                            bmv.normal = [fx/nvl,fy/nvl,fz/nvl]
                         #dbg("normal for mespart %d and vertex %d: %s (%s)" % (pi,vi,bmv.normal,(fx,fy,fz)))
                     bmv[my_id] = vi
                     bmv.index = vi
