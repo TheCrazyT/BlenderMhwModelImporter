@@ -232,7 +232,7 @@ class MeshPart:
         i = 0
         for p in parts:
             if p.getVertexRegionEnd() > currentRegionEnd:
-                dbg("#%d oldVertexOffset: 0x%08x VertexRegionEnd: 0x%08x currentRegionEnd: 0x%08x" % (i,p.VertexOffset,p.getVertexRegionEnd(),currentRegionEnd))
+                dbg("#%d oldVertexOffset: 0x%08x VertexSub: 0x%08x VertexRegionEnd: 0x%08x currentRegionEnd: 0x%08x" % (i,p.VertexSub,p.VertexOffset,p.getVertexRegionEnd(),currentRegionEnd))
                 if p.VertexOffset+cls.getStructSize()*(newVertexCount-self.VertexCount)>0xFFFFFFFF:
                     p.writeVertexSub(p.VertexSub+(newVertexCount-self.VertexCount))
                 elif p.VertexOffset+cls.getStructSize()*(newVertexCount-self.VertexCount)>0:
@@ -241,9 +241,10 @@ class MeshPart:
                     if(p.VertexBase>0):
                         p.writeVertexBase(p.VertexBase-(self.VertexCount-newVertexCount))
                     else:
-                        if p.VertexSub+(newVertexCount-self.VertexCount)>0:
+                        if p.VertexSub+(newVertexCount-self.VertexCount)>=0:
                             p.writeVertexSub(p.VertexSub+(newVertexCount-self.VertexCount))
                         else:
+                            dbg("p.VertexSub+(newVertexCount-self.VertexCount): %d < 0" % (p.VertexSub+(newVertexCount-self.VertexCount)))
                             raise Exception("No clue how to handle case where VertexBase=0 and VertexSub<0")
             #Vertex count should not influence relative offset ...
             #if headerref.FaceOffset+p.FaceOffset > headerref.FaceOffset+self.FaceOffset:
