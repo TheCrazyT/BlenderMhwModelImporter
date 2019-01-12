@@ -397,6 +397,8 @@ class MeshPart:
                     bones[v.index].append(int(vg.name.split(".")[1]))
             vertWeights = []
             for g in v.groups:
+                if math.isnan(g.weight):
+                    raise Exception("NaN as weight found for group %d and vertice index: %d" % (g.group,v.index))
                 vertWeights.append(g.weight)
             weights[v.index] = vertWeights
         
@@ -412,8 +414,11 @@ class MODBoneInfo2:
         self.id = internalId
         self.parentid = ReadByte(fl)
         self.child = ReadByte(fl)
-        fseek(fl,20)
-
+        fseek(fl,4)
+        self.length = ReadFloat(fl)
+        self.x = ReadFloat(fl)
+        self.y = ReadFloat(fl)
+        self.z = ReadFloat(fl)
         
 def reserveVerticesAndFaces(export,headerref,parts,p,newVertexCount,newFaceCount):
     fl = headerref.fl
@@ -618,14 +623,41 @@ class ExportMOD3(Operator, ImportHelper):
             armature = bpy.data.objects[ArmatureName].data
             if (FMT_BONE % 255) in armature.edit_bones:
                 Seek(fl,headerref.BonesOffset)
-                #TODO, also save parent structure
-                fseek(fl,headerref.BoneCount*24)
+                
+                if ArmatureName == AMATRICES_ARMATURE:
+                    fseek(fl,headerref.BoneCount*24)
+                else:
+                    for i in range(0,headerref.BoneCount):
+                        fseek(fl,2) # skip unkn1
+                        bone = armature.edit_bones[FMT_BONE % i]
+                        pb = bone.parent
+                        parentId = 255
+                        if(not (pb is None)):
+                            pbName = pb.name
+                            dbg("pbName: %s" % pb.name)
+                            parentId = int(pbName[len(FMT_BONE)-3:])
+                            dbg("parentId: %d" % parentId)
+                        dbg("write parentId,i %s at offset %08x" % ([parentId,i],getPos(fl)))
+                        WriteBytes(fl,[parentId])
+                        fseek(fl,1) # skip child for now (does not seem to be an unique number)
+                        fseek(fl,4) # skip unkn2
+                        
+                        length = bone.length
+                        if(bone.length <= 0.0001):
+                            dbg("zero length bone detected")
+                            length = 0
+                            t2 = mathutils.Matrix.Translation(Vector((0,0,0)))
+                        else:
+                            t2 = mathutils.Matrix.Translation(bone.tail)*mathutils.Matrix.Translation(bone.head).inverted()
+                        t2t = t2.to_translation()
+                        WriteFloats(fl,[length,t2t.x,t2t.y,t2t.z])
+
                 if ArmatureName == AMATRICES_ARMATURE:
                     fseek(fl,headerref.BoneCount*64)
                 #store "lmatrices"
                 for i in range(0,headerref.BoneCount):
                     bone = armature.edit_bones[FMT_BONE % i]
-                    if(Vector((0.0,0.0,0.0001)) == bone.head-bone.tail):
+                    if(bone.length <= 0.0001):
                         dbg("zero length bone detected")
                         t2 = mathutils.Matrix.Translation(Vector((0,0,0)))
                     else:
@@ -877,6 +909,7 @@ class ImportMOD3(Operator, ImportHelper):
         parentBone = a.edit_bones[-1]
         parentBone.transform(Matrix(((1,0,0),(0,0,1),(0,-1,0))))
         parentBone.name = FMT_BONE % 255
+        parentBone.length = 0.0001
 
         for b in self.bones:
             dbg("bone: %d has parent %d" % (b.id,b.parentid))
@@ -899,7 +932,9 @@ class ImportMOD3(Operator, ImportHelper):
                 #bone.head = parentBone.tail+Vector(loc)
                 #bone.tail = bone.head+Vector((0.0,0.0,1.0))
 
-                loc,rot,scal = t.decompose()
+                _,rot,scal = t.decompose()
+                loc = Vector((b.x,b.y,b.z))
+                
                 if loc.length <= 0.0001:
                     dbg("Bone length cannot be 0, adjusting")
                     loc = Vector((0.0,0.0,0.0001))
@@ -908,6 +943,10 @@ class ImportMOD3(Operator, ImportHelper):
                 bone.head = parentBone.tail
                 loc.rotate(rot)
                 bone.tail = bone.head+loc
+                if(b.length <= 0.0001):
+                    bone.length = 0.0001
+                else:
+                    bone.length = b.length
                 #bone.tail = bone.head+Vector((0.0,0.0,1.0))
                 #bone.tail = bone.head
                 #bone.transform(t)
@@ -1019,7 +1058,11 @@ class ImportMOD3(Operator, ImportHelper):
                         w3 = weights[vi][2]
                     if lw > 3:
                         w4 = weights[vi][3]
-                    w1 = min(int(round(w1 / WEIGHT_MULTIPLIER)), 1023)
+                    try:
+                        w1 = min(int(round(w1 / WEIGHT_MULTIPLIER)), 1023)
+                    except ValueError as e:
+                        dbg("w1: %f weights: %s" % (w1,weights[vi]))
+                        raise e
                     w2 = min(int(round(w2 / WEIGHT_MULTIPLIER)), 1023) << 10
                     w3 = min(int(round(w3 / WEIGHT_MULTIPLIER)), 1023) << 20
                     weightVal = w1 + w2 + w3
@@ -1057,7 +1100,11 @@ class ImportMOD3(Operator, ImportHelper):
                         w6 = weights[vi][5]
                     if lw > 6:
                         w7 = weights[vi][6]
-                    w1 = min(int(round(w1 / WEIGHT_MULTIPLIER)), 1023)
+                    try:
+                        w1 = min(int(round(w1 / WEIGHT_MULTIPLIER)), 1023)
+                    except ValueError as e:
+                        dbg("w1: %f weights: %s" % (w1,weights[vi]))
+                        raise e
                     w2 = min(int(round(w2 / WEIGHT_MULTIPLIER)), 1023) << 10
                     w3 = min(int(round(w3 / WEIGHT_MULTIPLIER)), 1023) << 20
                     w4 = min(int(round(w4 / WEIGHT_MULTIPLIER2)), 0xFF)
@@ -1337,7 +1384,8 @@ class ImportMOD3(Operator, ImportHelper):
         
         previous_context = bpy.context.area.type
         bpy.context.area.type = 'VIEW_3D'
-        bpy.ops.view3d.snap_cursor_to_center()            
+        bpy.ops.view3d.snap_cursor_to_center()
+        bpy.ops.object.mode_set(mode='OBJECT')
         try:
             if self.clear_scene_before_import:
                 bpy.ops.object.select_all(action='SELECT')
