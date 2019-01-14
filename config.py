@@ -51,7 +51,14 @@ def initConfig():
     BMHWI_FOLDER = None
     if "BMHWI_FOLDER" in os.environ:
         BMHWI_FOLDER = os.environ["BMHWI_FOLDER"]
-    if BMHWI_FOLDER != None:
+    if BMHWI_FOLDER is None:
+        testPath = bpy.utils.user_resource('SCRIPTS', "addons")
+        pathToCheck = "%s\\%s" % (testPath,"BlenderMhwModelImporter")
+        dbg("checking folder: %s" % pathToCheck)
+        if(os.path.isdir(pathToCheck)):
+            BMHWI_FOLDER = pathToCheck
+    dbg("BMHWI_FOLDER: %s" % BMHWI_FOLDER)
+    if not BMHWI_FOLDER is None:
         BMHWI_FOLDER = BMHWI_FOLDER.replace('"','')
         if(not os.path.isdir("%s\\Scarlet" % PATH)):
             PATH = BMHWI_FOLDER

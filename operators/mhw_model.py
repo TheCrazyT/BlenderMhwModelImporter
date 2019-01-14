@@ -1385,7 +1385,11 @@ class ImportMOD3(Operator, ImportHelper):
         previous_context = bpy.context.area.type
         bpy.context.area.type = 'VIEW_3D'
         bpy.ops.view3d.snap_cursor_to_center()
-        bpy.ops.object.mode_set(mode='OBJECT')
+        try:
+            bpy.ops.object.mode_set(mode='OBJECT')
+        except RuntimeError as e:
+            #ignore this error, it can happen when no object is visible!
+            pass
         try:
             if self.clear_scene_before_import:
                 bpy.ops.object.select_all(action='SELECT')
