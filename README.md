@@ -4,6 +4,13 @@ Page on Nexus-Mods: https://www.nexusmods.com/monsterhunterworld/mods/242
 
 Run start.bat to execute the addon.
 
+14.01.2019:
+
+A lot of improvements about bones/weights/uv.
+Also added some more folder checks.
+And some smaller bugfixes.
+
+
 29.10.2018:
 
 fixing start.bat-bug: space-characters inside filepath could prevent running the script.
