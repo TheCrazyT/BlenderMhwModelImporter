@@ -400,6 +400,9 @@ class MeshPart:
                 if math.isnan(g.weight):
                     raise Exception("NaN as weight found for group %d and vertice index: %d" % (g.group,v.index))
                 vertWeights.append(g.weight)
+            if len(vertWeights)>8:
+                bpy.context.scene.cursor_location = (v.x, v.y, v.z)
+                raise Exception("Overflowing maximum number of 8 weights for %s %s: %f, %f, %f." % (self.id, self.uid, v.x, v.y, v.z))
             weights[v.index] = vertWeights
         
         self.writemeshdataF(self,fl,verts,uvs,faces,weights,bones,normals,tangents)
@@ -997,6 +1000,9 @@ class ImportMOD3(Operator, ImportHelper):
             #dbg("vStartPos: %08x" % vStartPos)
             WriteFloats(fl,v3)
             if (len(normals)>0) and (len(tangents)>0):
+                if vi not in normals:
+                    bpy.context.scene.cursor_location = (vertices[vi].x, vertices[vi].y, vertices[vi].z)
+                    raise ValueError("No normals for %s %s: %f, %f, %f" % (meshPart.id, meshPart.uid, vertices[vi].x, vertices[vi].y, vertices[vi].z))
                 nvec = normals[vi]
                 #dbg("normals for %d: %s" % (vi,nvec))
                 floats = []
