@@ -29,12 +29,13 @@ def ReadByte(fl):
     res = unpack("B",contentStream.read(1))[0]
     pos[fl]+=1
     return res
-def ReadBytes(fl,l):
+def ReadBytes(fl,ln):
     global pos,contentStreams
+    dbg("ReadBytes %08x %d" % (pos[fl],ln))
     contentStream = contentStreams[fl]
     contentStream.seek(pos[fl])
-    res = unpack("%dB" % l,contentStream.read(l))[0]
-    pos[fl]+=l
+    res = unpack("%dB" % ln,contentStream.read(ln))
+    pos[fl]+=ln
     return res
 def ReadLong(fl):
     global pos,contentStreams
@@ -287,6 +288,33 @@ def getPos(fl):
     if pos[fl] > 0x100000000 :
         raise Exception("invalid pos detected! [%d]" % pos[fl])
     return pos[fl]
+def InsertBytes(fl,offset,data):
+    global pos,contentStreams,SNAPSHOT_ID
+    contentStream = contentStreams[fl]
+    dbg("InsertBytes %08x datalen:%d" % (offset,len(data)))
+    if(CREATE_FILE_SNAPSHOTS):
+        if(os.path.isdir(os.path.dirname(SNAPSHOT_FMT))):
+            SNAPSHOT_ID += 1
+            dbg("file snapshot: %s" % (SNAPSHOT_FMT % SNAPSHOT_ID))
+            f = open(SNAPSHOT_FMT % SNAPSHOT_ID, "wb")
+            contentStream.seek(0)
+            f.write(contentStream.read())
+            f.close()
+    contentStream2 = BytesIO(b'')
+    contentStream.seek(0)
+    contentStream2.write(contentStream.read(offset))
+    contentStream2.write(data)
+    contentStream2.write(contentStream.read())
+    contentStreams[fl] = contentStream2
+    if(CREATE_FILE_SNAPSHOTS):
+        if(os.path.isdir(os.path.dirname(SNAPSHOT_FMT))):
+            SNAPSHOT_ID += 1
+            dbg("file snapshot: %s" % (SNAPSHOT_FMT % SNAPSHOT_ID))
+            f = open(SNAPSHOT_FMT % SNAPSHOT_ID, "wb")
+            contentStream2.seek(0)
+            f.write(contentStream2.read())
+            f.close()
+    contentStream2.seek(0)
 def InsertEmptyBytes(fl,offset,count):
     global pos,contentStreams,SNAPSHOT_ID
     contentStream = contentStreams[fl]
