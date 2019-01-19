@@ -5,6 +5,8 @@
 #constants
 x64 = 64
 MESH_PART_SIZE = 80
+MESH_PART_VERTEX_COUNT_REL_OFFSET = 0x02
+MESH_PART_FACE_COUNT_REL_OFFSET = 0x20
 FMT_BONE = "Bone.%04d"
 FMT_VERTEX_BUFFER = "MODVertexBuffer%08x"
 CLONE_SUFFIX = ".clone"
@@ -213,6 +215,7 @@ class MeshPart:
             self.headerref = headerref
             self.loadmeshdataF = loadmeshdata
             self.writemeshdataF = writemeshdata
+            self.customName = None
     def loadmeshdata(self):
         self.loadmeshdataF(self)
     def calcVertexBufferSize(self):
@@ -262,7 +265,7 @@ class MeshPart:
         dbg("FaceOffset before %08x" % self.headerref.FaceOffset)
         self.headerref.FaceOffset += cls.getStructSize()*(newVertexCount-oldVertexCount)
         dbg("FaceOffset after %08x" % self.headerref.FaceOffset)
-        Seek(fl,self.MeshPartOffset+0x02)
+        Seek(fl,self.MeshPartOffset+MESH_PART_VERTEX_COUNT_REL_OFFSET)
         WriteLongs(fl,[self.VertexCount])
         appendEmptyVertices = cls.appendEmptyVertices
 
@@ -414,7 +417,11 @@ class MeshPart:
         
         self.writemeshdataF(self,fl,verts,uvs,faces,weights,bones,normals,tangents)
     def getName(self):
-        return "MyObject.%05d.%08x" % (self.uid,self.BlockType)
+        if self.customName is None:
+            return "MyObject.%05d.%08x" % (self.uid,self.BlockType)
+        return self.customName
+    def setName(self,name):
+        self.customName = name
     def getNewUid(self,parts):
         res = 0
         for p in parts:
@@ -427,20 +434,18 @@ class MeshPart:
             res = max(res,p.id)
         dbg("getNewId result 0x%08x" % res)
         return res+1
-    def getNewVertexSub(self,parts):
-        return 0
-    def getNewVertexBase(self,parts):
-        return 0
     def getNewVertexOffset(self,parts):
         res = 0
         for p in parts:
-            res = max(res,p.VertexOffset+(p.VertexSub+p.VertexCount)*self.calcVertexBufferSize())
-        dbg("getNewVertexOffset result 0x%08x" % res)
+            r = p.VertexOffset+(p.VertexSub+p.VertexCount)*self.BlockSize
+            dbg("0x%08x = 0x%08x + (%d + %d)*%d" % (r ,p.VertexOffset,p.VertexSub,p.VertexCount,self.BlockSize))
+            res = max(res,r)
+        dbg("getNewVertexOffset result 0x%08x ()" % res)
         return res
     def getNewFaceOffset(self,parts):
         res = 0
         for p in parts:
-            res = max(res,p.FaceOffset+p.FaceCount*3*2)
+            res = max(res,p.FaceOffset+p.FaceCount)
         dbg("getNewFaceOffset result 0x%08x" % res)
         return res
     def getNewMeshPartOffset(self,parts):
@@ -453,13 +458,20 @@ class MeshPart:
         dbg("createEmptyClone")
         fl = self.headerref.fl
         mpo = self.getNewMeshPartOffset(parts)
+        dbg("mpo: %08x" % mpo)
         Seek(fl,self.MeshPartOffset)
         data = ReadBytes(fl,MESH_PART_SIZE)
         data = array('B', data)
         dbg("data:")
         dbg(data)
         InsertBytes(fl,mpo,data)
-        return MeshPart(
+        Seek(fl,mpo+MESH_PART_VERTEX_COUNT_REL_OFFSET)
+        dbg("write 0 at: %08x" % getPos(fl))
+        WriteShorts(fl,[0])
+        Seek(fl,mpo+MESH_PART_FACE_COUNT_REL_OFFSET)
+        dbg("write 0 at: %08x" % getPos(fl))
+        WriteShorts(fl,[0])
+        p = MeshPart(
             mpo,
             self.getNewUid(parts),
             self.getNewId(parts),
@@ -468,17 +480,22 @@ class MeshPart:
             self.LOD,
             self.BlockSize,
             self.BlockType,
-            self.getNewVertexSub(parts),
+            0,
             0,
             self.getNewVertexOffset(parts),
             self.getNewFaceOffset(parts),
             0,
-            self.getNewVertexBase(parts),
+            0,
             None,
             self.boneremapid,
             self.headerref,
             self.loadmeshdataF,
             self.writemeshdataF)
+        p.writeVertexSub(0)
+        p.writeVertexBase(0)
+        p.writeVertexOffset(p.VertexOffset)
+        p.writeFaceOffset(p.FaceOffset)
+        return p
 
 class MODBoneInfo2:
     def __init__(self,internalId,fl,bendian):
@@ -553,15 +570,19 @@ def checkMeshesForModifications(export,i,cloneMappings):
     for p in parts:
         oldVertexRegionEnd = max(oldVertexRegionEnd,p.getVertexRegionEnd())
         oldTotalFaceCount += p.FaceCount
-
+    dbg("checkMeshesForModifications found %d parts" % len(parts))
     for p in parts:
         headerref = p.headerref
         n = p.getName()
         if not n in bpy.data.objects:
+            if n in cloneMappings:
+                dbg("%s is a clone" % n)
+                n = cloneMappings[n]
+                dbg("using clone name %s" % n)
+                p.setName(n)
+        if not n in bpy.data.objects:
             dbg("Mesh %s not found!" % n)
             continue
-        if not n in bpy.data.objects:
-            n = cloneMappings[n]
         obj = bpy.data.objects[n]
         bm = obj.data
         my_id = None
@@ -624,6 +645,15 @@ def checkMeshesForModifications(export,i,cloneMappings):
         i.readHeader()
         i.materials = i.readMaterials()
         i.readMeshParts()
+        for p in i.parts:
+            n = p.getName()
+            if not n in bpy.data.objects:
+                if n in cloneMappings:
+                    dbg("%s is a clone" % n)
+                    n = cloneMappings[n]
+                    dbg("using clone name %s" % n)
+                    p.setName(n)
+
 
 
 ################################################################ Start GUI stuff
