@@ -413,7 +413,7 @@ class MeshPart:
                     raise Exception("NaN as weight found for group %d and vertice index: %d" % (g.group,v.index))
                 vertWeights.append(g.weight)
             if len(vertWeights)>8:
-                bpy.context.scene.cursor_location = (v.x, v.y, v.z)
+                bpy.context.scene.cursor_location = (v.co[0], v.co[1], v.co[2])
                 raise Exception("Overflowing maximum number of 8 weights for %s %s: %f, %f, %f." % (self.id, self.uid, v.x, v.y, v.z))
             weights[v.index] = vertWeights
         
