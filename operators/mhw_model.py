@@ -663,6 +663,7 @@ def checkMeshesForModifications(export,i,cloneMappings):
 class ExportMOD3(Operator, ImportHelper):
     bl_idname = "custom_import.export_mhw"
     bl_label = "Export MHW MOD file (.mod3)"
+    bl_options = {'PRESET'}
  
     # ImportHelper mixin class uses this
     filename_ext = ".mod3"
@@ -865,6 +866,7 @@ def do_read_bones(self,context):
 class ImportMOD3(Operator, ImportHelper):
     bl_idname = "custom_import.import_mhw"
     bl_label = "Load MHW MOD file (.mod3)"
+    bl_options = {'PRESET'}
  
     # ImportHelper mixin class uses this
     filename_ext = ".mod3"

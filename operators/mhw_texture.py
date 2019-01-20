@@ -49,6 +49,7 @@ def doImportTex(filePath):
 class ImportTEX(Operator, ImportHelper):
     bl_idname = "custom_import.import_mhw_tex"
     bl_label = "Load MHW TEX file (.tex)"
+    bl_options = {'PRESET'}
  
     filename_ext = ".tex"
  
