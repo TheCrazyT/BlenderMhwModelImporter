@@ -4,6 +4,8 @@
 
 #constants
 x64 = 64
+
+MIN_BONE_LENGTH = 0.0001
 MESH_PART_SIZE = 80
 MESH_PART_VERTEX_COUNT_REL_OFFSET = 0x02
 MESH_PART_FACE_COUNT_REL_OFFSET = 0x20
@@ -673,10 +675,10 @@ class ExportMOD3(Operator, ImportHelper):
             default=False)
     overwrite_lod = BoolProperty(name="Force LOD1",
                 description="overwrite the level of detail of the other meshes (for example if you used 'Only import high LOD-parts').",
-                default=False)
+                default=True)
     export_normals = BoolProperty(name="Export normals (experimental)",
                 description="Exports normals for every vertice.",
-                default=False)
+                default=True)
     apply_trans_rot = BoolProperty(name="Apply rotation/transformation changes",
                 description="Automatically apply rotation/transformation of mesh to vertices (ctrl+a).",
                 default=True)
@@ -803,7 +805,7 @@ class ExportMOD3(Operator, ImportHelper):
                         fseek(fl,4) # skip unkn2
                         
                         length = bone.length
-                        if(bone.length <= 0.0001):
+                        if(bone.length <= MIN_BONE_LENGTH):
                             dbg("zero length bone detected")
                             length = 0
                             t2 = mathutils.Matrix.Translation(Vector((0,0,0)))
@@ -817,7 +819,7 @@ class ExportMOD3(Operator, ImportHelper):
                 #store "lmatrices"
                 for i in range(0,headerref.BoneCount):
                     bone = armature.edit_bones[FMT_BONE % i]
-                    if(bone.length <= 0.0001):
+                    if(bone.length <= MIN_BONE_LENGTH):
                         dbg("zero length bone detected")
                         t2 = mathutils.Matrix.Translation(Vector((0,0,0)))
                     else:
@@ -1013,9 +1015,9 @@ class ImportMOD3(Operator, ImportHelper):
                 loc,rot,scal = t.decompose()
                 bone2.head = parentBone.tail
                 loc.rotate(rot)
-                if loc.length <= 0.0001:
+                if loc.length <= MIN_BONE_LENGTH:
                     dbg("Bone length cannot be 0, adjusting")
-                    loc = Vector((0.0,0.0,0.0001))
+                    loc = Vector((0.0,0.0,MIN_BONE_LENGTH))
 
                 bone2.tail = bone2.head+loc
                 #bone2.tail = bone2.head+Vector((0.0,0.0,1.0))
@@ -1069,7 +1071,7 @@ class ImportMOD3(Operator, ImportHelper):
         parentBone = a.edit_bones[-1]
         parentBone.transform(Matrix(((1,0,0),(0,0,1),(0,-1,0))))
         parentBone.name = FMT_BONE % 255
-        parentBone.length = 0.0001
+        parentBone.length = MIN_BONE_LENGTH
 
         for b in self.bones:
             dbg("bone: %d has parent %d" % (b.id,b.parentid))
@@ -1095,16 +1097,16 @@ class ImportMOD3(Operator, ImportHelper):
                 _,rot,scal = t.decompose()
                 loc = Vector((b.x,b.y,b.z))
                 
-                if loc.length <= 0.0001:
+                if loc.length <= MIN_BONE_LENGTH:
                     dbg("Bone length cannot be 0, adjusting")
-                    loc = Vector((0.0,0.0,0.0001))
+                    loc = Vector((0.0,0.0,MIN_BONE_LENGTH))
                 dbg("##1 bone: %d length: %f l: %s r: %s s: %s,t:\n%s" % (b.id,loc.length,loc,rot,scal,t))
 
                 bone.head = parentBone.tail
                 loc.rotate(rot)
                 bone.tail = bone.head+loc
-                if(b.length <= 0.0001):
-                    bone.length = 0.0001
+                if(b.length <= MIN_BONE_LENGTH):
+                    bone.length = MIN_BONE_LENGTH
                 else:
                     bone.length = b.length
                 #bone.tail = bone.head+Vector((0.0,0.0,1.0))

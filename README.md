@@ -1,5 +1,13 @@
-[ ![Download](https://api.bintray.com/packages/thecrazyt/BlenderMhwModelImporter/BlenderMhwModelImporter/images/download.svg) ](https://bintray.com/thecrazyt/BlenderMhwModelImporter/BlenderMhwModelImporter/_latestVersion)
 Page on Nexus-Mods: https://www.nexusmods.com/monsterhunterworld/mods/242
+
+
+Snapshot version: [ ![Download](https://api.bintray.com/packages/thecrazyt/BlenderMhwModelImporter/BlenderMhwModelImporter/images/download.svg) ](https://bintray.com/thecrazyt/BlenderMhwModelImporter/BlenderMhwModelImporter/_latestVersion)
+
+Beware, this version might contain editor-breaking things, stable version is always on nexusmods.
+
+Snapshot also means that the files can change without a change of the version number itself! (but you can compare the commit-id to figure out if you are on the newest version)
+
+
  
 
 Run start.bat to execute the addon.
