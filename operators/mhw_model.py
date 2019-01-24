@@ -1562,7 +1562,7 @@ class ImportMOD3(Operator, ImportHelper):
                 bpy.ops.object.select_all(action='SELECT')
                 bpy.ops.object.delete() 
                 for i in bpy.data.images.keys():
-                    bpy.data.images.remove(i)
+                    bpy.data.images.remove(bpy.data.images[i])
             self.embed_data = True if self.embed_mode == EMBED_MODE_DATA else False
             self.reference_data = True if self.embed_mode == EMBED_MODE_REFERENCE else False
             self.init_main()
