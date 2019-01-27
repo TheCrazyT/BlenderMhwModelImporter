@@ -243,7 +243,7 @@ def Write8s(fl,floats):
     global pos,contentStreams
     if(len(floats) == 0):
         return
-    contentStream = contentStreams[fl]
+    #contentStream = contentStreams[fl]
     #dbg("WriteBytes at 0x%08x %s" % (pos[fl],bytes))
     if pos[fl]==0:
         raise Exception("Invalid write position")
