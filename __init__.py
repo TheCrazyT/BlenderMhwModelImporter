@@ -20,10 +20,10 @@ bl_info = {
 
 def register():
     import bpy
-    from .operators.mhw_model import ImportMOD3
-    from .operators.mhw_model import ExportMOD3
-    from .operators.mhw_model import menu_func_import as mhw_model_menu_func_import
-    from .operators.mhw_model import menu_func_export as mhw_model_menu_func_export
+    from .operators.mhw_model_gui import ImportMOD3
+    from .operators.mhw_model_gui import ExportMOD3
+    from .operators.mhw_model_gui import menu_func_import as mhw_model_menu_func_import
+    from .operators.mhw_model_gui import menu_func_export as mhw_model_menu_func_export
     from .operators.mhw_texture import menu_func_import as mhw_texture_menu_func_export
     from .operators.mhw_texture import ImportTEX
     bpy.utils.register_class(ImportMOD3)
@@ -35,10 +35,10 @@ def register():
 
 def unregister():
     import bpy
-    from .operators.mhw_model import ImportMOD3
-    from .operators.mhw_model import ExportMOD3
-    from .operators.mhw_model import menu_func_import as mhw_model_menu_func_import
-    from .operators.mhw_model import menu_func_export as mhw_model_menu_func_export
+    from .operators.mhw_model_gui import ImportMOD3
+    from .operators.mhw_model_gui import ExportMOD3
+    from .operators.mhw_model_gui import menu_func_import as mhw_model_menu_func_import
+    from .operators.mhw_model_gui import menu_func_export as mhw_model_menu_func_export
     from .operators.mhw_texture import menu_func_import as mhw_texture_menu_func_export
     from .operators.mhw_texture import ImportTEX
     bpy.utils.unregister_class(ImportMOD3)
