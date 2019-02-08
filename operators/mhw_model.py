@@ -192,6 +192,7 @@ class MeshPart:
         dbg("modifyVertexCount %d [oldVertexCount: %d]" % (newVertexCount,self.VertexCount))
         if newVertexCount==self.VertexCount:
             return
+        self.currentRegionEnd = self.getVertexRegionEnd()
         cls = mod3.MODVertexBufferSelector(self.BlockType)
         fl = self.headerref.fl
         headerref = self.headerref
