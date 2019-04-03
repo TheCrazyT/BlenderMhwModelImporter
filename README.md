@@ -1,3 +1,17 @@
+This project is **out of date**.
+For getting a recent version you should **go to**:
+https://github.com/AsteriskAmpersand/Mod3-MHW-Importer
+(a complete rework ...)
+
+
+
+
+
+
+The version here is just for nostalgia.
+
+
+
 Page on Nexus-Mods: https://www.nexusmods.com/monsterhunterworld/mods/242
 
 
